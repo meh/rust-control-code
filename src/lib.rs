@@ -16,7 +16,8 @@
 #![recursion_limit="100"]
 
 #[macro_use]
-extern crate nom;
+pub extern crate nom;
+pub use nom::IResult as Result;
 
 #[macro_use]
 mod util;
