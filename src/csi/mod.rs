@@ -792,11 +792,11 @@ pub mod shim {
 #[cfg(test)]
 mod test {
 	mod parse {
-		use {Item, C1, CSI, parse};
+		use {Control, C1, CSI, parse};
 
 		macro_rules! test {
 			($string:expr => $item:expr) => (
-				assert_eq!(Item::C1(C1::ControlSequence($item)),
+				assert_eq!(Control::C1(C1::ControlSequence($item)),
 					parse($string).unwrap().1);
 			);
 		}
@@ -1697,11 +1697,11 @@ mod test {
 	}
 
 	mod format {
-		use {Item, C1, CSI, format, parse};
+		use {Control, C1, CSI, format, parse};
 
 		macro_rules! test {
 			($code:expr) => (
-				let item = Item::C1(C1::ControlSequence($code));
+				let item = Control::C1(C1::ControlSequence($code));
 
 				assert_eq!(item, parse(&format(&item, true)).unwrap().1);
 				assert_eq!(item, parse(&format(&item, false)).unwrap().1);
@@ -1711,15 +1711,15 @@ mod test {
 		#[test]
 		fn parameters() {
 			assert_eq!(&b"\x9B1;~"[..],
-				&*format(&Item::C1(C1::ControlSequence(
+				&*format(&Control::C1(C1::ControlSequence(
 					CSI::Unknown(b'~', None, vec![Some(1), None]))), false));
 
 			assert_eq!(&b"\x9B;1~"[..],
-				&*format(&Item::C1(C1::ControlSequence(
+				&*format(&Control::C1(C1::ControlSequence(
 					CSI::Unknown(b'~', None, vec![None, Some(1)]))), false));
 
 			assert_eq!(&b"\x9B1;1~"[..],
-				&*format(&Item::C1(C1::ControlSequence(
+				&*format(&Control::C1(C1::ControlSequence(
 					CSI::Unknown(b'~', None, vec![Some(1), Some(1)]))), false));
 		}
 

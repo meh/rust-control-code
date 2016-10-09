@@ -22,8 +22,8 @@ pub use nom::IResult as Result;
 #[macro_use]
 mod util;
 
-mod item;
-pub use item::{Item, parse};
+mod control;
+pub use control::{Control, parse};
 
 mod format;
 pub use format::{Format, format, format_to};

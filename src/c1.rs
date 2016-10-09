@@ -365,11 +365,11 @@ pub mod shim {
 #[cfg(test)]
 mod test {
 	mod parse {
-		use {Item, C1, parse};
+		use {Control, C1, parse};
 
 		macro_rules! test {
 			($string:expr => $item:expr) => (
-				assert_eq!(Item::C1($item),
+				assert_eq!(Control::C1($item),
 					parse($string).unwrap().1);
 			);
 		}
@@ -646,11 +646,11 @@ mod test {
 	}
 
 	mod format {
-		use {Item, C1, format, parse};
+		use {Control, C1, format, parse};
 
 		macro_rules! test {
 			($code:expr) => (
-				let item = Item::C1($code);
+				let item = Control::C1($code);
 
 				assert_eq!(item, parse(&format(&item, true)).unwrap().1);
 				assert_eq!(item, parse(&format(&item, false)).unwrap().1);

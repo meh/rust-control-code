@@ -19,62 +19,61 @@ use nom::{self, IResult, Needed};
 use {Format, C0, C1, CSI, SGR};
 
 #[derive(Eq, PartialEq, Clone, Debug)]
-pub enum Item<'a> {
-	String(&'a str),
-
+pub enum Control<'a> {
 	C0(C0::T),
 	C1(C1::T<'a>),
+	None(&'a str),
 }
 
-impl<'a> From<C0::T> for Item<'a> {
-	fn from(value: C0::T) -> Item<'a> {
-		Item::C0(value)
+impl<'a> From<C0::T> for Control<'a> {
+	fn from(value: C0::T) -> Control<'a> {
+		Control::C0(value)
 	}
 }
 
-impl<'a> From<C1::T<'a>> for Item<'a> {
-	fn from(value: C1::T<'a>) -> Item<'a> {
-		Item::C1(value)
+impl<'a> From<C1::T<'a>> for Control<'a> {
+	fn from(value: C1::T<'a>) -> Control<'a> {
+		Control::C1(value)
 	}
 }
 
-impl<'a> From<CSI::T> for Item<'a> {
-	fn from(value: CSI::T) -> Item<'a> {
-		Item::C1(C1::ControlSequence(value))
+impl<'a> From<CSI::T> for Control<'a> {
+	fn from(value: CSI::T) -> Control<'a> {
+		Control::C1(C1::ControlSequence(value))
 	}
 }
 
-impl<'a> From<SGR::T> for Item<'a> {
-	fn from(value: SGR::T) -> Item<'a> {
-		Item::C1(C1::ControlSequence(CSI::SelectGraphicalRendition(vec![value])))
+impl<'a> From<SGR::T> for Control<'a> {
+	fn from(value: SGR::T) -> Control<'a> {
+		Control::C1(C1::ControlSequence(CSI::SelectGraphicalRendition(vec![value])))
 	}
 }
 
-impl<'a> From<Vec<SGR::T>> for Item<'a> {
-	fn from(value: Vec<SGR::T>) -> Item<'a> {
-		Item::C1(C1::ControlSequence(CSI::SelectGraphicalRendition(value)))
+impl<'a> From<Vec<SGR::T>> for Control<'a> {
+	fn from(value: Vec<SGR::T>) -> Control<'a> {
+		Control::C1(C1::ControlSequence(CSI::SelectGraphicalRendition(value)))
 	}
 }
 
-impl<'a> Format for Item<'a> {
+impl<'a> Format for Control<'a> {
 	fn fmt<W: Write>(&self, mut f: W, wide: bool) -> io::Result<()> {
 		match self {
-			&Item::String(ref value) =>
+			&Control::None(ref value) =>
 				f.write_all(value.as_bytes()),
 
-			&Item::C0(ref value) =>
+			&Control::C0(ref value) =>
 				value.fmt(f, wide),
 
-			&Item::C1(ref value) =>
+			&Control::C1(ref value) =>
 				value.fmt(f, wide),
 		}
 	}
 }
 
-named!(pub parse<Item>,
+named!(pub parse<Control>,
 	alt!(control | string));
 
-fn string(i: &[u8]) -> IResult<&[u8], Item> {
+fn string(i: &[u8]) -> IResult<&[u8], Control> {
 	const WIDTH: [u8; 256] = [
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 0x1F
@@ -114,14 +113,14 @@ fn string(i: &[u8]) -> IResult<&[u8], Item> {
 	}
 
 	if let Ok(string) = str::from_utf8(&i[..length]) {
-		IResult::Done(&i[length..], Item::String(string))
+		IResult::Done(&i[length..], Control::None(string))
 	}
 	else {
 		IResult::Error(nom::Err::Code(nom::ErrorKind::Custom(9001)))
 	}
 }
 
-named!(control<Item>,
+named!(control<Control>,
 	alt!(
-		map!(C1::parse, |c| Item::C1(c)) |
-		map!(C0::parse, |c| Item::C0(c))));
+		map!(C1::parse, |c| Control::C1(c)) |
+		map!(C0::parse, |c| Control::C0(c))));

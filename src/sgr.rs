@@ -321,11 +321,11 @@ pub mod shim {
 #[cfg(test)]
 mod test {
 	mod parse {
-		use {Item, C1, CSI, SGR, parse};
+		use {Control, C1, CSI, SGR, parse};
 
 		macro_rules! test {
 			($string:expr => $($attrs:expr),+) => (
-				assert_eq!(Item::C1(C1::ControlSequence(CSI::SelectGraphicalRendition(vec![$($attrs),*]))),
+				assert_eq!(Control::C1(C1::ControlSequence(CSI::SelectGraphicalRendition(vec![$($attrs),*]))),
 					parse($string).unwrap().1);
 			);
 		}
@@ -477,11 +477,11 @@ mod test {
 	}
 
 	mod format {
-		use {Item, C1, CSI, SGR, format, parse};
+		use {Control, C1, CSI, SGR, format, parse};
 
 		macro_rules! test {
 			($($attr:expr),+) => (
-				let item = Item::C1(C1::ControlSequence(CSI::SelectGraphicalRendition(
+				let item = Control::C1(C1::ControlSequence(CSI::SelectGraphicalRendition(
 					vec![$($attr),*])));
 
 				assert_eq!(item, parse(&format(&item, true)).unwrap().1);
