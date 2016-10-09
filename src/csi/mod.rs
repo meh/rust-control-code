@@ -29,12 +29,12 @@ pub enum CSI {
 	CursorForwardTabulation(u32),
 	CursorNextLine(u32),
 	CursorPreviousLine(u32),
-	CursorPositionReport(u32, u32),
+	CursorPositionReport { x: u32, y: u32 },
 	CursorTabulationControl(Tabulation),
 	CursorBack(u32),
 	CursorDown(u32),
 	CursorForward(u32),
-	CursorPosition(u32, u32),
+	CursorPosition { x: u32, y: u32 },
 	CursorUp(u32),
 	CursorLineTabulation(u32),
 	DeviceAttributes(u32),
@@ -51,7 +51,7 @@ pub enum CSI {
 	FunctionKey(u32),
 	SelectFont(u32, u32),
 	GraphicCharacterCombination(Combination),
-	GraphicSizeModification(u32, u32),
+	GraphicSizeModification { width: u32, height: u32 },
 	InsertBlankCharacter(u32),
 	IdentifyDeviceControlString(Option<u32>),
 	IdentifyGraphicSubrepertoire(Option<u32>),
@@ -174,8 +174,8 @@ impl Format for CSI {
 			CursorPreviousLine(n) =>
 				write!("F", [n]),
 
-			CursorPositionReport(x, y) =>
-				write!("R", [x + 1, y + 1]),
+			CursorPositionReport { x, y } =>
+				write!("R", [y + 1, x + 1]),
 
 			CursorTabulationControl(value) =>
 				write!("W", [value]),
@@ -189,8 +189,8 @@ impl Format for CSI {
 			CursorForward(n) =>
 				write!("C", [n]),
 
-			CursorPosition(x, y) =>
-				write!("H", [x + 1, y + 1]),
+			CursorPosition { x, y } =>
+				write!("H", [y + 1, x + 1]),
 
 			CursorUp(n) =>
 				write!("A", [n]),
@@ -240,8 +240,8 @@ impl Format for CSI {
 			GraphicCharacterCombination(value) =>
 				write!(" _", [value]),
 
-			GraphicSizeModification(w, h) =>
-				write!(" B", [h, w]),
+			GraphicSizeModification { width, height } =>
+				write!(" B", [height, width]),
 
 			InsertBlankCharacter(n) =>
 				write!("@", [n]),
@@ -506,7 +506,7 @@ with_args!(CPL<1, args>,
 
 with_args!(CPR<2, args>,
 	map!(char!('R'), |_|
-		CursorPositionReport(arg!(args[0] => 1) - 1, arg!(args[1] => 1) - 1)));
+		CursorPositionReport { y: arg!(args[0] => 1) - 1, x: arg!(args[1] => 1) - 1 }));
 
 with_args!(CTC<1, args>,
 	map_res!(char!('W'), |_|
@@ -526,7 +526,7 @@ with_args!(CUF<1, args>,
 
 with_args!(CUP<2, args>,
 	map!(char!('H'), |_|
-		CursorPosition(arg!(args[0] => 1) - 1, arg!(args[1] => 1) - 1)));
+		CursorPosition { y: arg!(args[0] => 1) - 1, x: arg!(args[1] => 1) - 1 }));
 
 with_args!(CUU<1, args>,
 	map!(char!('A'), |_|
@@ -600,7 +600,7 @@ with_args!(GCC<1, args>,
 
 with_args!(GSM<2, args>,
 	map!(tag!(b" B"), |_|
-		GraphicSizeModification(arg!(args[1] => 100), arg!(args[0] => 100))));
+		GraphicSizeModification { height: arg!(args[0] => 100), width: arg!(args[1] => 100) }));
 
 with_args!(HPA<1, args>,
 	map!(char!('`'), |_|
@@ -616,7 +616,7 @@ with_args!(HPR<1, args>,
 
 with_args!(HVP<2, args>,
 	map!(char!('f'), |_|
-		CursorPosition(arg!(args[0] => 1) - 1, arg!(args[1] => 1) - 1)));
+		CursorPosition{ y: arg!(args[0] => 1) - 1, x: arg!(args[1] => 1) - 1 }));
 
 with_args!(ICH<1, args>,
 	map!(char!('@'), |_|
@@ -849,16 +849,16 @@ mod test {
 		#[test]
 		fn cpr() {
 			test!(b"\x1B[R" =>
-				CSI::CursorPositionReport(0, 0));
+				CSI::CursorPositionReport { x: 0, y: 0 });
 
 			test!(b"\x1B[2R" =>
-				CSI::CursorPositionReport(1, 0));
+				CSI::CursorPositionReport { x: 0, y: 1 });
 
 			test!(b"\x1B[;2R" =>
-				CSI::CursorPositionReport(0, 1));
+				CSI::CursorPositionReport { x: 1, y: 0 });
 
 			test!(b"\x1B[2;2R" =>
-				CSI::CursorPositionReport(1, 1));
+				CSI::CursorPositionReport { x: 1, y: 1 });
 		}
 
 		#[test]
@@ -918,19 +918,19 @@ mod test {
 		#[test]
 		fn cup() {
 			test!(b"\x1B[H" =>
-				CSI::CursorPosition(0, 0));
+				CSI::CursorPosition { x: 0, y: 0 });
 
 			test!(b"\x1B[2;3H" =>
-				CSI::CursorPosition(1, 2));
+				CSI::CursorPosition { x: 2, y: 1 });
 
 			test!(b"\x1B[;3H" =>
-				CSI::CursorPosition(0, 2));
+				CSI::CursorPosition{ x: 2, y: 0 });
 
 			test!(b"\x1B[2;H" =>
-				CSI::CursorPosition(1, 0));
+				CSI::CursorPosition { x: 0, y: 1 });
 
 			test!(b"\x1B[;H" =>
-				CSI::CursorPosition(0, 0));
+				CSI::CursorPosition { x: 0, y: 0 });
 		}
 
 		#[test]
@@ -1152,16 +1152,16 @@ mod test {
 		#[test]
 		fn gsm() {
 			test!(b"\x1B[ B" =>
-				CSI::GraphicSizeModification(100, 100));
+				CSI::GraphicSizeModification { width: 100, height: 100 });
 
 			test!(b"\x1B[13 B" =>
-				CSI::GraphicSizeModification(100, 13));
+				CSI::GraphicSizeModification { width: 100, height: 13 });
 
 			test!(b"\x1B[;13 B" =>
-				CSI::GraphicSizeModification(13, 100));
+				CSI::GraphicSizeModification { width: 13, height: 100 });
 
 			test!(b"\x1B[13;13 B" =>
-				CSI::GraphicSizeModification(13, 13));
+				CSI::GraphicSizeModification { width: 13, height: 13 });
 		}
 
 		#[test]
@@ -1194,16 +1194,16 @@ mod test {
 		#[test]
 		fn hvp() {
 			test!(b"\x1B[f" =>
-				CSI::CursorPosition(0, 0));
+				CSI::CursorPosition { x: 0, y: 0 });
 
 			test!(b"\x1B[13f" =>
-				CSI::CursorPosition(12, 0));
+				CSI::CursorPosition { x: 0, y: 12 });
 
 			test!(b"\x1B[;13f" =>
-				CSI::CursorPosition(0, 12));
+				CSI::CursorPosition { x: 12, y: 0 });
 
 			test!(b"\x1B[13;13f" =>
-				CSI::CursorPosition(12, 12));
+				CSI::CursorPosition { x: 12, y: 12 });
 		}
 
 		#[test]
@@ -1755,10 +1755,10 @@ mod test {
 
 		#[test]
 		fn cpr() {
-			test!(CSI::CursorPositionReport(0, 0));
-			test!(CSI::CursorPositionReport(1, 0));
-			test!(CSI::CursorPositionReport(0, 1));
-			test!(CSI::CursorPositionReport(1, 1));
+			test!(CSI::CursorPositionReport { x: 0, y: 0 });
+			test!(CSI::CursorPositionReport { x: 0, y: 1 });
+			test!(CSI::CursorPositionReport { x: 1, y: 0 });
+			test!(CSI::CursorPositionReport { x: 1, y: 1 });
 		}
 
 		#[test]
@@ -1792,10 +1792,10 @@ mod test {
 
 		#[test]
 		fn cup() {
-			test!(CSI::CursorPosition(0, 0));
-			test!(CSI::CursorPosition(1, 2));
-			test!(CSI::CursorPosition(0, 2));
-			test!(CSI::CursorPosition(1, 0));
+			test!(CSI::CursorPosition { x: 0, y: 0 });
+			test!(CSI::CursorPosition { x: 1, y: 2 });
+			test!(CSI::CursorPosition { x: 2, y: 0 });
+			test!(CSI::CursorPosition { x: 0, y: 1 });
 		}
 
 		#[test]
@@ -1916,10 +1916,10 @@ mod test {
 
 		#[test]
 		fn gsm() {
-			test!(CSI::GraphicSizeModification(100, 100));
-			test!(CSI::GraphicSizeModification(100, 13));
-			test!(CSI::GraphicSizeModification(13, 100));
-			test!(CSI::GraphicSizeModification(13, 13));
+			test!(CSI::GraphicSizeModification { width: 100, height: 100 });
+			test!(CSI::GraphicSizeModification { width: 100, height: 13 });
+			test!(CSI::GraphicSizeModification { width: 13, height: 100 });
+			test!(CSI::GraphicSizeModification { width: 13, height: 13 });
 		}
 
 		#[test]
@@ -1938,14 +1938,6 @@ mod test {
 		fn hpr() {
 			test!(CSI::CursorForward(1));
 			test!(CSI::CursorForward(2));
-		}
-
-		#[test]
-		fn hvp() {
-			test!(CSI::CursorPosition(0, 0));
-			test!(CSI::CursorPosition(12, 0));
-			test!(CSI::CursorPosition(0, 12));
-			test!(CSI::CursorPosition(12, 12));
 		}
 
 		#[test]
