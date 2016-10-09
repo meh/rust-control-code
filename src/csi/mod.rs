@@ -797,7 +797,7 @@ pub mod shim {
 #[cfg(test)]
 mod test {
 	mod parse {
-		pub use {Item, C1, CSI, parse};
+		use {Item, C1, CSI, parse};
 
 		macro_rules! test {
 			($string:expr => $item:expr) => (
@@ -1702,7 +1702,7 @@ mod test {
 	}
 
 	mod format {
-		pub use {Item, C1, CSI, format, parse};
+		use {Item, C1, CSI, format, parse};
 
 		macro_rules! test {
 			($code:expr) => (
