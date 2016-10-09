@@ -112,19 +112,14 @@ impl Format for CSI {
 				let     iter = $args;
 				let mut iter = iter.peekable();
 
-				while iter.peek().is_some() {
-					if let Some(value) = iter.next().unwrap().clone() {
+				while let Some(value) = iter.next() {
+					if let Some(value) = value.clone() {
 						let value: u32 = value;
-
 						try!(f.write_all(value.to_string().as_bytes()));
 					}
 
-					try!(f.write_all(&[b';']));
-				}
-
-				if let Some(value) = iter.next() {
-					if let Some(value) = value.clone() {
-						try!(f.write_all(value.to_string().as_bytes()));
+					if iter.peek().is_some() {
+						try!(f.write_all(&[b';']));
 					}
 				}
 			});
@@ -1711,6 +1706,21 @@ mod test {
 				assert_eq!(item, parse(&format(&item, true)).unwrap().1);
 				assert_eq!(item, parse(&format(&item, false)).unwrap().1);
 			);
+		}
+
+		#[test]
+		fn parameters() {
+			assert_eq!(&b"\x9B1;~"[..],
+				&*format(&Item::C1(C1::ControlSequence(
+					CSI::Unknown(b'~', None, vec![Some(1), None]))), false));
+
+			assert_eq!(&b"\x9B;1~"[..],
+				&*format(&Item::C1(C1::ControlSequence(
+					CSI::Unknown(b'~', None, vec![None, Some(1)]))), false));
+
+			assert_eq!(&b"\x9B1;1~"[..],
+				&*format(&Item::C1(C1::ControlSequence(
+					CSI::Unknown(b'~', None, vec![Some(1), Some(1)]))), false));
 		}
 
 		#[test]
