@@ -49,10 +49,10 @@ pub enum CSI {
 	SelectFont(u32, u32),
 	GraphicCharacterCombination(Combination),
 	GraphicSizeModification { width: u32, height: u32 },
-	InsertBlankCharacter(u32),
+	InsertCharacter(u32),
 	IdentifyDeviceControlString(Option<u32>),
 	IdentifyGraphicSubrepertoire(Option<u32>),
-	InsertBlankLine(u32),
+	InsertLine(u32),
 	Justify(Vec<Option<u32>>),
 	MediaCopy(Copy),
 	NextPage(u32),
@@ -240,7 +240,7 @@ impl Format for CSI {
 			GraphicSizeModification { width, height } =>
 				write!(" B", [height, width]),
 
-			InsertBlankCharacter(n) =>
+			InsertCharacter(n) =>
 				write!("@", [n]),
 
 			IdentifyDeviceControlString(n) =>
@@ -249,7 +249,7 @@ impl Format for CSI {
 			IdentifyGraphicSubrepertoire(n) =>
 				write!(" M", ![n]),
 
-			InsertBlankLine(n) =>
+			InsertLine(n) =>
 				write!("L", [n]),
 
 			Justify(ref args) =>
@@ -617,7 +617,7 @@ with_args!(HVP<2, args>,
 
 with_args!(ICH<1, args>,
 	map!(char!('@'), |_|
-		InsertBlankCharacter(arg!(args[0] => 1))));
+		InsertCharacter(arg!(args[0] => 1))));
 
 with_args!(IDCS<1, args>,
 	map!(tag!(b" O"), |_|
@@ -629,7 +629,7 @@ with_args!(IGS<1, args>,
 
 with_args!(IL<1, args>,
 	map!(char!('L'), |_|
-		InsertBlankLine(arg!(args[0] => 1))));
+		InsertLine(arg!(args[0] => 1))));
 
 with_args!(JFY<args>,
 	map!(tag!(b" F"), |_|
@@ -1206,10 +1206,10 @@ mod test {
 		#[test]
 		fn ich() {
 			test!(b"\x1B[@" =>
-				CSI::InsertBlankCharacter(1));
+				CSI::InsertCharacter(1));
 
 			test!(b"\x1B[23@" =>
-				CSI::InsertBlankCharacter(23));
+				CSI::InsertCharacter(23));
 		}
 
 		#[test]
@@ -1233,10 +1233,10 @@ mod test {
 		#[test]
 		fn il() {
 			test!(b"\x1B[L" =>
-				CSI::InsertBlankLine(1));
+				CSI::InsertLine(1));
 
 			test!(b"\x1B[2L" =>
-				CSI::InsertBlankLine(2));
+				CSI::InsertLine(2));
 		}
 
 		#[test]
@@ -1939,8 +1939,8 @@ mod test {
 
 		#[test]
 		fn ich() {
-			test!(CSI::InsertBlankCharacter(1));
-			test!(CSI::InsertBlankCharacter(23));
+			test!(CSI::InsertCharacter(1));
+			test!(CSI::InsertCharacter(23));
 		}
 
 		#[test]
@@ -1957,8 +1957,8 @@ mod test {
 
 		#[test]
 		fn il() {
-			test!(CSI::InsertBlankLine(1));
-			test!(CSI::InsertBlankLine(2));
+			test!(CSI::InsertLine(1));
+			test!(CSI::InsertLine(2));
 		}
 
 		#[test]
