@@ -198,6 +198,7 @@ named!(pub parse<C1>,
 named!(one<C1>,
 	switch!(take!(1),
 		b"\x9B" => call!(CSI) |
+		b"\x9D" => call!(OSC) |
 
 		b"\x80" => call!(PAD)  |
 		b"\x81" => call!(HOP)  |
@@ -226,7 +227,6 @@ named!(one<C1>,
 		b"\x98" => call!(SOS)  |
 		b"\x99" => call!(SGCI) |
 		b"\x9A" => call!(SCI)  |
-		b"\x9D" => call!(OSC)  |
 		b"\x9E" => call!(PM)   |
 		b"\x9F" => call!(APC)));
 
@@ -365,7 +365,7 @@ named!(APC<C1>,
 	map!(string, |s| ApplicationProgramCommand(s)));
 
 named!(string<&str>,
-	map!(terminated!(take_while!(is_string), ST),
+	map!(terminated!(take_while!(is_string), alt!(ST | tag!(b"\x07"))),
 		|s| unsafe { str::from_utf8_unchecked(s) }));
 
 fn is_string(b: u8) -> bool {
