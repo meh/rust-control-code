@@ -405,7 +405,7 @@ const LETTER:   &'static [u8] = b"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijkl
 const MODIFIER: &'static [u8] = b" !\"#$%&'()*+,-./";
 
 named!(pub parse<CSI>,
-	alt!(private | standard | unknown));
+	alt!(private | normal));
 
 named!(private<CSI>,
 	chain!(
@@ -416,25 +416,12 @@ named!(private<CSI>,
 
 		|| Private(id as u8, modifier.map(|c| c as u8), args)));
 
-named!(unknown<CSI>,
+named!(normal<CSI>,
 	chain!(
 		args:     parameters ~
 		modifier: opt!(one_of!(MODIFIER)) ~
-		id:       one_of!(LETTER),
-
-		|| Unknown(id as u8, modifier.map(|c| c as u8), args)));
-
-// TODO(meh): reorder them by most common occurrence
-named!(standard<CSI>,
-	chain!(
-		args: parameters ~
-		res:  alt_apply!(&args;
-			CBT | CHA | CHT | CNL | CPL | CPR | CTC | CUB | CUD | CUF | CUP | CUU | CVT |
-			DA | DAQ | DCH | DL | DSR | DTA | EA | ECH | ED | EF | EL | FNK | FNT |
-			GCC | GSM | HPA | HPB | HPR | HVP | ICH | IDCS | IGS | IL | JFY | MC | NP |
-			PEC | PFS | PP | PPA | PPB | PPR | PTX | QUAD | RCP | REP | RM | SCO |
-			SCP | SCS | SD | SIMD | SGR | SL | SLS | SM | SR | SRS | SSU | SSW | SU |
-			VPA | VPB | VPR),
+		id:       one_of!(LETTER) ~
+		res:      expr_opt!(standard(id, modifier, args)),
 
 		|| res));
 
@@ -451,332 +438,358 @@ named!(parameter<Option<u32> >,
 			|| number) => { |n|
 				Some(u32::from_str_radix(unsafe { str::from_utf8_unchecked(n) }, 10).unwrap()) }));
 
+fn standard(id: char, modifier: Option<char>, args: Vec<Option<u32>>) -> Option<CSI> {
+	match (id, modifier) {
+		('Z',  None) => CBT(&args),
+		('G',  None) => CHA(&args),
+		('I',  None) => CHT(&args),
+		('E',  None) => CNL(&args),
+		('F',  None) => CPL(&args),
+		('R',  None) => CPR(&args),
+		('W',  None) => CTC(&args),
+		('D',  None) => CUB(&args),
+		('B',  None) => CUD(&args),
+		('C',  None) => CUF(&args),
+		('H',  None) => CUP(&args),
+		('A',  None) => CUU(&args),
+		('Y',  None) => CVT(&args),
+		('c',  None) => DA(&args),
+		('o',  None) => DAQ(&args),
+		('P',  None) => DCH(&args),
+		('M',  None) => DL(&args),
+		('n',  None) => DSR(&args),
+		('O',  None) => EA(&args),
+		('X',  None) => ECH(&args),
+		('J',  None) => ED(&args),
+		('N',  None) => EF(&args),
+		('K',  None) => EL(&args),
+		('`',  None) => HPA(&args),
+		('j',  None) => HPB(&args),
+		('a',  None) => HPR(&args),
+		('f',  None) => HVP(&args),
+		('@',  None) => ICH(&args),
+		('L',  None) => IL(&args),
+		('i',  None) => MC(&args),
+		('U',  None) => NP(&args),
+		('V',  None) => PP(&args),
+		('\\', None) => PTX(&args),
+		('u',  None) => RCP(&args),
+		('b',  None) => REP(&args),
+		('l',  None) => RM(&args),
+		('s',  None) => SCP(&args),
+		('T',  None) => SD(&args),
+		('^',  None) => SIMD(&args),
+		('m',  None) => SGR(&args),
+		('h',  None) => SM(&args),
+		('[',  None) => SRS(&args),
+		('S',  None) => SU(&args),
+		('d',  None) => VPA(&args),
+		('k',  None) => VPB(&args),
+		('e',  None) => VPR(&args),
+
+		('T', Some(' ')) => DTA(&args),
+		('W', Some(' ')) => FNK(&args),
+		('D', Some(' ')) => FNT(&args),
+		('_', Some(' ')) => GCC(&args),
+		('B', Some(' ')) => GSM(&args),
+		('O', Some(' ')) => IDCS(&args),
+		('M', Some(' ')) => IGS(&args),
+		('F', Some(' ')) => JFY(&args),
+		('Z', Some(' ')) => PEC(&args),
+		('J', Some(' ')) => PFS(&args),
+		('P', Some(' ')) => PPA(&args),
+		('R', Some(' ')) => PPB(&args),
+		('Q', Some(' ')) => PPR(&args),
+		('H', Some(' ')) => QUAD(&args),
+		('e', Some(' ')) => SCO(&args),
+		('b', Some(' ')) => SCS(&args),
+		('@', Some(' ')) => SL(&args),
+		('h', Some(' ')) => SLS(&args),
+		('A', Some(' ')) => SR(&args),
+		('I', Some(' ')) => SSU(&args),
+		('[', Some(' ')) => SSW(&args),
+
+		_ =>
+			Some(Unknown(id as u8, modifier.map(|m| m as u8), args))
+	}
+}
+
 macro_rules! with_args {
-	($name:ident<$n:tt, $params:ident>, $submac:ident!( $($args:tt)* )) => (
-		fn $name<'a, 'b>(i: &'a [u8], $params: &'b [Option<u32>]) -> nom::IResult<&'a [u8], CSI> {
+	($name:ident<$n:tt, $params:ident>, ? $body:expr) => (
+		fn $name($params: &[Option<u32>]) -> Option<CSI> {
 			if $params.len() <= $n {
-				$submac!(i, $($args)*)
+				$body.ok()
 			}
 			else {
-				nom::IResult::Error(nom::Err::Code(ErrorKind::Custom(9001)))
+				None
 			}
 		}
 	);
 
-	($name:ident<$params:ident>, $submac:ident!( $($args:tt)* )) => (
-		fn $name<'a, 'b>(i: &'a [u8], $params: &'b [Option<u32>]) -> nom::IResult<&'a [u8], CSI> {
-			$submac!(i, $($args)*)
+	($name:ident<$n:tt, $params:ident>, $body:expr) => (
+		fn $name($params: &[Option<u32>]) -> Option<CSI> {
+			if $params.len() <= $n {
+				Some($body)
+			}
+			else {
+				None
+			}
 		}
 	);
 
-	($name:ident, $submac:ident!( $($args:tt)* )) => (
-		fn $name<'a, 'b>(i: &'a [u8], args: &'b [Option<u32>]) -> nom::IResult<&'a [u8], CSI> {
+	($name:ident<$params:ident>, ? $body:expr) => (
+		fn $name($params: &[Option<u32>]) -> Option<CSI> {
+			$body.ok()
+		}
+	);
+
+	($name:ident<$params:ident>, $body:expr) => (
+		fn $name($params: &[Option<u32>]) -> Option<CSI> {
+			Some($body)
+		}
+	);
+
+	($name:ident, $body:expr) => (
+		fn $name(args: &[Option<u32>]) -> Option<CSI> {
 			if args.is_empty() {
-				$submac!(i, $($args)*)
+				Some($body)
 			}
 			else {
-				nom::IResult::Error(nom::Err::Code(ErrorKind::Custom(9001)))
+				None
 			}
 		}
 	);
 }
 
 with_args!(CBT<1, args>,
-	map!(char!('Z'), |_|
-		CursorBackTabulation(arg!(args[0] => 1))));
+	CursorBackTabulation(arg!(args[0] => 1)));
 
 with_args!(CHA<1, args>,
-	map!(char!('G'), |_|
-		CursorHorizontalPosition(arg!(args[0] => 1) - 1)));
+	CursorHorizontalPosition(arg!(args[0] => 1) - 1));
 
 with_args!(CHT<1, args>,
-	map!(char!('I'), |_|
-		CursorForwardTabulation(arg!(args[0] => 1))));
+	CursorForwardTabulation(arg!(args[0] => 1)));
 
 with_args!(CNL<1, args>,
-	map!(char!('E'), |_|
-		CursorNextLine(arg!(args[0] => 1))));
+	CursorNextLine(arg!(args[0] => 1)));
 
 with_args!(CPL<1, args>,
-	map!(char!('F'), |_|
-		CursorPreviousLine(arg!(args[0] => 1))));
+	CursorPreviousLine(arg!(args[0] => 1)));
 
 with_args!(CPR<2, args>,
-	map!(char!('R'), |_|
-		CursorPositionReport { y: arg!(args[0] => 1) - 1, x: arg!(args[1] => 1) - 1 }));
+	CursorPositionReport { y: arg!(args[0] => 1) - 1, x: arg!(args[1] => 1) - 1 });
 
-with_args!(CTC<1, args>,
-	map_res!(char!('W'), |_|
-		Tabulation::parse(arg!(args[0] => 0)).map(CursorTabulationControl)));
+with_args!(CTC<1, args>, ?
+	Tabulation::parse(arg!(args[0] => 0)).map(CursorTabulationControl));
 
 with_args!(CUB<1, args>,
-	map!(char!('D'), |_|
-		CursorBack(arg!(args[0] => 1))));
+	CursorBack(arg!(args[0] => 1)));
 
 with_args!(CUD<1, args>,
-	map!(char!('B'), |_|
-		CursorDown(arg!(args[0] => 1))));
+	CursorDown(arg!(args[0] => 1)));
 
 with_args!(CUF<1, args>,
-	map!(char!('C'), |_|
-		CursorForward(arg!(args[0] => 1))));
+	CursorForward(arg!(args[0] => 1)));
 
 with_args!(CUP<2, args>,
-	map!(char!('H'), |_|
-		CursorPosition { y: arg!(args[0] => 1) - 1, x: arg!(args[1] => 1) - 1 }));
+	CursorPosition { y: arg!(args[0] => 1) - 1, x: arg!(args[1] => 1) - 1 });
 
 with_args!(CUU<1, args>,
-	map!(char!('A'), |_|
-		CursorUp(arg!(args[0] => 1))));
+	CursorUp(arg!(args[0] => 1)));
 
 with_args!(CVT<1, args>,
-	map!(char!('Y'), |_|
-		CursorLineTabulation(arg!(args[0] => 1))));
+	CursorLineTabulation(arg!(args[0] => 1)));
 
 with_args!(DA<1, args>,
-	map!(char!('c'), |_|
-		DeviceAttributes(arg!(args[0] => 0))));
+	DeviceAttributes(arg!(args[0] => 0)));
 
-with_args!(DAQ<1, args>,
-	map_res!(char!('o'), |_|
-		Qualification::parse(arg!(args[0] => 0)).map(DefineAreaQualification)));
+with_args!(DAQ<1, args>, ?
+	Qualification::parse(arg!(args[0] => 0)).map(DefineAreaQualification));
 
 with_args!(DCH<1, args>,
-	map!(char!('P'), |_|
-		DeleteCharacter(arg!(args[0] => 1))));
+	DeleteCharacter(arg!(args[0] => 1)));
 
 with_args!(DL<1, args>,
-	map!(char!('M'), |_|
-		DeleteLine(arg!(args[0] => 1))));
+	DeleteLine(arg!(args[0] => 1)));
 
-with_args!(DSR<1, args>,
-	map_res!(char!('n'), |_|
-		match arg!(args[0] => 0) {
-			6 =>
-				Ok(DeviceStatusReport),
+with_args!(DSR<1, args>, ?
+	match arg!(args[0] => 0) {
+		6 =>
+			Ok(DeviceStatusReport),
 
-			_ =>
-				Err(nom::Err::Code::<&[u8], u32>(ErrorKind::Custom(9004)))
-		}));
+		_ =>
+			Err(nom::Err::Code::<&[u8], u32>(ErrorKind::Custom(9004)))
+	});
 
 with_args!(DTA<2, args>,
-	map!(tag!(b" T"), |_|
-		DimensionTextArea(arg!(args[0] => 0), arg!(args[1] => 0))));
+	DimensionTextArea(arg!(args[0] => 0), arg!(args[1] => 0)));
 
-with_args!(EA<1, args>,
-	map_res!(char!('O'), |_|
-		Erase::parse(arg!(args[0] => 0)).map(EraseArea)));
+with_args!(EA<1, args>, ?
+	Erase::parse(arg!(args[0] => 0)).map(EraseArea));
 
 with_args!(ECH<1, args>,
-	map!(char!('X'), |_|
-		EraseCharacter(arg!(args[0] => 1))));
+	EraseCharacter(arg!(args[0] => 1)));
 
-with_args!(ED<1, args>,
-	map_res!(char!('J'), |_|
-		Erase::parse(arg!(args[0] => 0)).map(EraseDisplay)));
+with_args!(ED<1, args>, ?
+	Erase::parse(arg!(args[0] => 0)).map(EraseDisplay));
 
-with_args!(EF<1, args>,
-	map_res!(char!('N'), |_|
-		Erase::parse(arg!(args[0] => 0)).map(EraseField)));
+with_args!(EF<1, args>, ?
+	Erase::parse(arg!(args[0] => 0)).map(EraseField));
 
-with_args!(EL<1, args>,
-	map_res!(char!('K'), |_|
-		Erase::parse(arg!(args[0] => 0)).map(EraseLine)));
+with_args!(EL<1, args>, ?
+	Erase::parse(arg!(args[0] => 0)).map(EraseLine));
 
 with_args!(FNK<1, args>,
-	map!(tag!(b" W"), |_|
-		FunctionKey(arg!(args[0] => 0))));
+	FunctionKey(arg!(args[0] => 0)));
 
 with_args!(FNT<2, args>,
-	map!(tag!(" D"), |_|
-		SelectFont(arg!(args[0] => 0), arg!(args[1] => 0))));
+	SelectFont(arg!(args[0] => 0), arg!(args[1] => 0)));
 
-with_args!(GCC<1, args>,
-	map_res!(tag!(b" _"), |_|
-		Combination::parse(arg!(args[0] => 0)).map(GraphicCharacterCombination)));
+with_args!(GCC<1, args>, ?
+	Combination::parse(arg!(args[0] => 0)).map(GraphicCharacterCombination));
 
 with_args!(GSM<2, args>,
-	map!(tag!(b" B"), |_|
-		GraphicSizeModification { height: arg!(args[0] => 100), width: arg!(args[1] => 100) }));
+	GraphicSizeModification { height: arg!(args[0] => 100), width: arg!(args[1] => 100) });
 
 with_args!(HPA<1, args>,
-	map!(char!('`'), |_|
-		CursorHorizontalPosition(arg!(args[0] => 1) - 1)));
+	CursorHorizontalPosition(arg!(args[0] => 1) - 1));
 
 with_args!(HPB<1, args>,
-	map!(char!('j'), |_|
-		CursorBack(arg!(args[0] => 1))));
+	CursorBack(arg!(args[0] => 1)));
 
 with_args!(HPR<1, args>,
-	map!(char!('a'), |_|
-		CursorForward(arg!(args[0] => 1))));
+	CursorForward(arg!(args[0] => 1)));
 
 with_args!(HVP<2, args>,
-	map!(char!('f'), |_|
-		CursorPosition{ y: arg!(args[0] => 1) - 1, x: arg!(args[1] => 1) - 1 }));
+	CursorPosition{ y: arg!(args[0] => 1) - 1, x: arg!(args[1] => 1) - 1 });
 
 with_args!(ICH<1, args>,
-	map!(char!('@'), |_|
-		InsertCharacter(arg!(args[0] => 1))));
+	InsertCharacter(arg!(args[0] => 1)));
 
 with_args!(IDCS<1, args>,
-	map!(tag!(b" O"), |_|
-		IdentifyDeviceControlString(arg!(args[0]))));
+	IdentifyDeviceControlString(arg!(args[0])));
 
 with_args!(IGS<1, args>,
-	map!(tag!(b" M"), |_|
-		IdentifyGraphicSubrepertoire(arg!(args[0]))));
+	IdentifyGraphicSubrepertoire(arg!(args[0])));
 
 with_args!(IL<1, args>,
-	map!(char!('L'), |_|
-		InsertLine(arg!(args[0] => 1))));
+	InsertLine(arg!(args[0] => 1)));
 
 with_args!(JFY<args>,
-	map!(tag!(b" F"), |_|
-		Justify(args.to_vec())));
+	Justify(args.to_vec()));
 
-with_args!(MC<1, args>,
-	map_res!(char!('i'), |_|
-		Copy::parse(arg!(args[0] => 0)).map(MediaCopy)));
+with_args!(MC<1, args>, ?
+	Copy::parse(arg!(args[0] => 0)).map(MediaCopy));
 
 with_args!(NP<1, args>,
-	map!(char!('U'), |_|
-		NextPage(arg!(args[0] => 1))));
+	NextPage(arg!(args[0] => 1)));
 
-with_args!(PEC<1, args>,
-	map_res!(tag!(b" Z"), |_|
-		Expansion::parse(arg!(args[0] => 0)).map(Presentation)));
+with_args!(PEC<1, args>, ?
+	Expansion::parse(arg!(args[0] => 0)).map(Presentation));
 
 with_args!(PFS<1, args>,
-	map!(tag!(b" J"), |_|
-		PageFormat(arg!(args[0] => 0))));
+	PageFormat(arg!(args[0] => 0)));
 
 with_args!(PP<1, args>,
-	map!(char!('V'), |_|
-		PrecedingPage(arg!(args[0] => 1))));
+	PrecedingPage(arg!(args[0] => 1)));
 
 with_args!(PPA<1, args>,
-	map!(tag!(b" P"), |_|
-		PagePosition(arg!(args[0] => 1))));
+	PagePosition(arg!(args[0] => 1)));
 
 with_args!(PPB<1, args>,
-	map!(tag!(b" R"), |_|
-		PageBack(arg!(args[0] => 1))));
+	PageBack(arg!(args[0] => 1)));
 
 with_args!(PPR<1, args>,
-	map!(tag!(b" Q"), |_|
-		PageForward(arg!(args[0] => 1))));
+	PageForward(arg!(args[0] => 1)));
 
-with_args!(PTX<1, args>,
-	map_res!(char!('\\'), |_|
-		Parallel::parse(arg!(args[0] => 0)).map(ParallelText)));
+with_args!(PTX<1, args>, ?
+	Parallel::parse(arg!(args[0] => 0)).map(ParallelText));
 
-with_args!(QUAD<args>,
-	map_res!(tag!(b" H"), |_|
-		args.iter().map(|d| d.unwrap_or(0))
-			.map(Disposition::parse)
-			.collect::<Result<Vec<_>, _>>()
-			.map(GraphicDisposition)));
+with_args!(QUAD<args>, ?
+	args.iter().map(|d| d.unwrap_or(0))
+		.map(Disposition::parse)
+		.collect::<Result<Vec<_>, _>>()
+		.map(GraphicDisposition));
 
 with_args!(RCP,
-	map!(char!('u'), |_|
-		RestoreCursor));
+	RestoreCursor);
 
 with_args!(REP<1, args>,
-	map!(char!('b'), |_|
-		Repeat(arg!(args[0] => 1))));
+	Repeat(arg!(args[0] => 1)));
 
-with_args!(RM<args>,
-	map_res!(char!('l'), |_|
-		args.iter().map(|d| d.unwrap_or(0))
-			.map(Mode::parse)
-			.collect::<Result<Vec<_>, _>>()
-			.map(Reset)));
+with_args!(RM<args>, ?
+	args.iter().map(|d| d.unwrap_or(0))
+		.map(Mode::parse)
+		.collect::<Result<Vec<_>, _>>()
+		.map(Reset));
 
-with_args!(SCO<1, args>,
-	map_res!(tag!(b" e"), |_|
-		match arg!(args[0] => 0) {
-			0 => Ok(CharacterOrientation(0)),
-			1 => Ok(CharacterOrientation(45)),
-			2 => Ok(CharacterOrientation(90)),
-			3 => Ok(CharacterOrientation(135)),
-			4 => Ok(CharacterOrientation(180)),
-			5 => Ok(CharacterOrientation(225)),
-			6 => Ok(CharacterOrientation(270)),
-			7 => Ok(CharacterOrientation(315)),
-			_ => Err(nom::Err::Code::<&[u8], u32>(ErrorKind::Custom(9002))),
-		}));
+with_args!(SCO<1, args>, ?
+	match arg!(args[0] => 0) {
+		0 => Ok(CharacterOrientation(0)),
+		1 => Ok(CharacterOrientation(45)),
+		2 => Ok(CharacterOrientation(90)),
+		3 => Ok(CharacterOrientation(135)),
+		4 => Ok(CharacterOrientation(180)),
+		5 => Ok(CharacterOrientation(225)),
+		6 => Ok(CharacterOrientation(270)),
+		7 => Ok(CharacterOrientation(315)),
+		_ => Err(nom::Err::Code::<&[u8], u32>(ErrorKind::Custom(9002))),
+	});
 
 with_args!(SCP,
-	map!(char!('s'), |_|
-		SaveCursor));
+	SaveCursor);
 
 with_args!(SCS<1, args>,
-	map!(tag!(b" b"), |_|
-		CharacterSpacing(arg!(args[0] => 1))));
+	CharacterSpacing(arg!(args[0] => 1)));
 
 with_args!(SD<1, args>,
-	map!(char!('T'), |_|
-		ScrollDown(arg!(args[0] => 1))));
+	ScrollDown(arg!(args[0] => 1)));
 
-with_args!(SIMD<1, args>,
-	map_res!(char!('^'), |_|
-		Direction::parse(arg!(args[0] => 0)).map(Movement)));
+with_args!(SIMD<1, args>, ?
+	Direction::parse(arg!(args[0] => 0)).map(Movement));
 
-with_args!(SGR<args>,
-	map_res!(char!('m'), |_|
-		::SGR::parse(args).map(|v| SelectGraphicalRendition(v))));
+with_args!(SGR<args>, ?
+	::SGR::parse(args).map(|v| SelectGraphicalRendition(v)));
 
 with_args!(SL<1, args>,
-	map!(tag!(b" @"), |_|
-		ScrollLeft(arg!(args[0] => 1))));
+	ScrollLeft(arg!(args[0] => 1)));
 
 with_args!(SLS<1, args>,
-	map!(tag!(b" h"), |_|
-		LineSpacing(arg!(args[0] => 1))));
+	LineSpacing(arg!(args[0] => 1)));
 
-with_args!(SM<args>,
-	map_res!(char!('h'), |_|
-		args.iter().map(|d| d.unwrap_or(0))
-			.map(Mode::parse)
-			.collect::<Result<Vec<_>, _>>()
-			.map(Set)));
+with_args!(SM<args>, ?
+	args.iter().map(|d| d.unwrap_or(0))
+		.map(Mode::parse)
+		.collect::<Result<Vec<_>, _>>()
+		.map(Set));
 
 with_args!(SR<1, args>,
-	map!(tag!(b" A"), |_|
-		ScrollRight(arg!(args[0] => 1))));
+	ScrollRight(arg!(args[0] => 1)));
 
-with_args!(SRS<1, args>,
-	map_res!(tag!(b"["), |_|
-		match arg!(args[0] => 0) {
-			0 => Ok(ReverseString(false)),
-			1 => Ok(ReverseString(true)),
-			_ => Err(nom::Err::Code::<&[u8], u32>(ErrorKind::Custom(9002))),
-		}));
+with_args!(SRS<1, args>, ?
+	match arg!(args[0] => 0) {
+		0 => Ok(ReverseString(false)),
+		1 => Ok(ReverseString(true)),
+		_ => Err(nom::Err::Code::<&[u8], u32>(ErrorKind::Custom(9002))),
+	});
 
-with_args!(SSU<1, args>,
-	map_res!(tag!(b" I"), |_|
-		Unit::parse(arg!(args[0] => 0)).map(SizeUnit)));
+with_args!(SSU<1, args>, ?
+	Unit::parse(arg!(args[0] => 0)).map(SizeUnit));
 
 with_args!(SSW<1, args>,
-	map!(tag!(b" ["), |_|
-		SpaceWidth(arg!(args[0] => 1))));
+	SpaceWidth(arg!(args[0] => 1)));
 
 with_args!(SU<1, args>,
-	map!(char!('S'), |_|
-		ScrollUp(arg!(args[0] => 1))));
+	ScrollUp(arg!(args[0] => 1)));
 
 with_args!(VPA<1, args>,
-	map!(char!('d'), |_|
-		LinePosition(arg!(args[0] => 1))));
+	LinePosition(arg!(args[0] => 1)));
 
 with_args!(VPB<1, args>,
-	map!(char!('k'), |_|
-		CursorUp(arg!(args[0] => 1))));
+	CursorUp(arg!(args[0] => 1)));
 
 with_args!(VPR<1, args>,
-	map!(char!('e'), |_|
-		CursorDown(arg!(args[0] => 1))));
+	CursorDown(arg!(args[0] => 1)));
 
 pub mod shim {
 	pub use super::CSI as T;

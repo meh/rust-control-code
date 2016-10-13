@@ -193,165 +193,182 @@ impl<'a> Format for C1<'a> {
 }
 
 named!(pub parse<C1>,
-	alt!(PAD | HOP | BPH | NBH | IND | NEL | SSA | ESA | HTS | HTJ | VTS |
-	     PLD | PLU | RI | SS2 | SS3 | DCS | PU1 | PU2 | STS | CCH | MW | SPA |
-	     EPA | SOS | SGCI | SCI | CSI | OSC | PM | APC));
+	alt!(one | two));
 
-fn is_printable(b: u8) -> bool {
-	(b >= 0x08 && b <= 0x0D) || (b >= 0x20 && b <= 0x7E)
-}
+named!(one<C1>,
+	switch!(take!(1),
+		b"\x80" => call!(PAD)  |
+		b"\x81" => call!(HOP)  |
+		b"\x82" => call!(BPH)  |
+		b"\x83" => call!(NBH)  |
+		b"\x84" => call!(IND)  |
+		b"\x85" => call!(NEL)  |
+		b"\x86" => call!(SSA)  |
+		b"\x87" => call!(ESA)  |
+		b"\x88" => call!(HTS)  |
+		b"\x89" => call!(HTJ)  |
+		b"\x8A" => call!(VTS)  |
+		b"\x8B" => call!(PLD)  |
+		b"\x8C" => call!(PLU)  |
+		b"\x8D" => call!(RI)   |
+		b"\x8E" => call!(SS2)  |
+		b"\x8F" => call!(SS3)  |
+		b"\x90" => call!(DCS)  |
+		b"\x91" => call!(PU1)  |
+		b"\x92" => call!(PU2)  |
+		b"\x93" => call!(STS)  |
+		b"\x94" => call!(CCH)  |
+		b"\x95" => call!(MW)   |
+		b"\x96" => call!(SPA)  |
+		b"\x97" => call!(EPA)  |
+		b"\x98" => call!(SOS)  |
+		b"\x99" => call!(SGCI) |
+		b"\x9A" => call!(SCI)  |
+		b"\x9B" => call!(CSI)  |
+		b"\x9D" => call!(OSC)  |
+		b"\x9E" => call!(PM)   |
+		b"\x9F" => call!(APC)));
 
-named!(string<&str>,
-	map!(terminated!(take_while!(is_printable), ST),
-		|s| unsafe { str::from_utf8_unchecked(s) }));
+named!(two<C1>,
+	chain!(tag!(b"\x1B") ~
+		res: switch!(take!(1),
+			b"\x40" => call!(PAD)  |
+			b"\x41" => call!(HOP)  |
+			b"\x42" => call!(BPH)  |
+			b"\x43" => call!(NBH)  |
+			b"\x44" => call!(IND)  |
+			b"\x45" => call!(NEL)  |
+			b"\x46" => call!(SSA)  |
+			b"\x47" => call!(ESA)  |
+			b"\x48" => call!(HTS)  |
+			b"\x49" => call!(HTJ)  |
+			b"\x4A" => call!(VTS)  |
+			b"\x4B" => call!(PLD)  |
+			b"\x4C" => call!(PLU)  |
+			b"\x4D" => call!(RI)   |
+			b"\x4E" => call!(SS2)  |
+			b"\x4F" => call!(SS3)  |
+			b"\x50" => call!(DCS)  |
+			b"\x51" => call!(PU1)  |
+			b"\x52" => call!(PU2)  |
+			b"\x53" => call!(STS)  |
+			b"\x54" => call!(CCH)  |
+			b"\x55" => call!(MW)   |
+			b"\x56" => call!(SPA)  |
+			b"\x57" => call!(EPA)  |
+			b"\x58" => call!(SOS)  |
+			b"\x59" => call!(SGCI) |
+			b"\x5A" => call!(SCI)  |
+			b"\x5B" => call!(CSI)  |
+			b"\x5D" => call!(OSC)  |
+			b"\x5E" => call!(PM)   |
+			b"\x5F" => call!(APC)),
+
+	|| res));
 
 named!(PAD<C1>,
-	value!(PaddingCharacter,
-		alt!(tag!(b"\x80") | tag!(b"\x1B\x40"))));
+	value!(PaddingCharacter));
 
 named!(HOP<C1>,
-	value!(HighOctetPreset,
-		alt!(tag!(b"\x81") | tag!(b"\x1B\x41"))));
+	value!(HighOctetPreset));
 
 named!(BPH<C1>,
-	value!(BreakPermittedHere,
-		alt!(tag!(b"\x82") | tag!(b"\x1B\x42"))));
+	value!(BreakPermittedHere));
 
 named!(NBH<C1>,
-	value!(NoBreakHere,
-		alt!(tag!(b"\x83") | tag!(b"\x1B\x43"))));
+	value!(NoBreakHere));
 
 named!(IND<C1>,
-	value!(Index,
-		alt!(tag!(b"\x84") | tag!(b"\x1B\x44"))));
+	value!(Index));
 
 named!(NEL<C1>,
-	value!(NextLine,
-		alt!(tag!(b"\x85") | tag!(b"\x1B\x45"))));
+	value!(NextLine));
 
 named!(SSA<C1>,
-	value!(StartSelectedArea,
-		alt!(tag!(b"\x86") | tag!(b"\x1B\x46"))));
+	value!(StartSelectedArea));
 
 named!(ESA<C1>,
-	value!(EndSelectedArea,
-		alt!(tag!(b"\x87") | tag!(b"\x1B\x47"))));
+	value!(EndSelectedArea));
 
 named!(HTS<C1>,
-	value!(HorizontalTabulationSet,
-		alt!(tag!(b"\x88") | tag!(b"\x1B\x48"))));
+	value!(HorizontalTabulationSet));
 
 named!(HTJ<C1>,
-	value!(HorizontalTabulationWithJustification,
-		alt!(tag!(b"\x89") | tag!(b"\x1B\x49"))));
+	value!(HorizontalTabulationWithJustification));
 
 named!(VTS<C1>,
-	value!(VerticalTabulationSet,
-		alt!(tag!(b"\x8A") | tag!(b"\x1B\x4A"))));
+	value!(VerticalTabulationSet));
 
 named!(PLD<C1>,
-	value!(PartialLineDown,
-		alt!(tag!(b"\x8B") | tag!(b"\x1B\x4B"))));
+	value!(PartialLineDown));
 
 named!(PLU<C1>,
-	value!(PartialLineUp,
-		alt!(tag!(b"\x8C") | tag!(b"\x1B\x4C"))));
+	value!(PartialLineUp));
 
 named!(RI<C1>,
-	value!(ReverseIndex,
-		alt!(tag!(b"\x8D") | tag!(b"\x1B\x4D"))));
+	value!(ReverseIndex));
 
 named!(SS2<C1>,
-	value!(SingleShiftTwo,
-		alt!(tag!(b"\x8E") | tag!(b"\x1B\x4E"))));
+	value!(SingleShiftTwo));
 
 named!(SS3<C1>,
-	value!(SingleShiftThree,
-		alt!(tag!(b"\x8F") | tag!(b"\x1B\x4F"))));
+	value!(SingleShiftThree));
 
 named!(DCS<C1>,
-	chain!(
-		alt!(tag!(b"\x90") | tag!(b"\x1B\x50")) ~
-		string: string,
-		
-		|| DeviceControlString(string)));
+	map!(string, |s| DeviceControlString(s)));
 
 named!(PU1<C1>,
-	value!(PrivateUseOne,
-		alt!(tag!(b"\x91") | tag!(b"\x1B\x51"))));
+	value!(PrivateUseOne));
 
 named!(PU2<C1>,
-	value!(PrivateUseTwo,
-		alt!(tag!(b"\x92") | tag!(b"\x1B\x52"))));
+	value!(PrivateUseTwo));
 
 named!(STS<C1>,
-	value!(SetTransmitState,
-		alt!(tag!(b"\x93") | tag!(b"\x1B\x53"))));
+	value!(SetTransmitState));
 
 named!(CCH<C1>,
-	value!(CancelCharacter,
-		alt!(tag!(b"\x94") | tag!(b"\x1B\x54"))));
+	value!(CancelCharacter));
 
 named!(MW<C1>,
-	value!(MessageWaiting,
-		alt!(tag!(b"\x95") | tag!(b"\x1B\x55"))));
+	value!(MessageWaiting));
 
 named!(SPA<C1>,
-	value!(StartProtectedArea,
-		alt!(tag!(b"\x96") | tag!(b"\x1B\x56"))));
+	value!(StartProtectedArea));
 
 named!(EPA<C1>,
-	value!(EndProtectedArea,
-		alt!(tag!(b"\x97") | tag!(b"\x1B\x57"))));
+	value!(EndProtectedArea));
 
 named!(SOS<C1>,
-	chain!(
-		alt!(tag!(b"\x98") | tag!(b"\x1B\x58")) ~
-		string: string,
-		
-		|| String(string)));
+	map!(string, |s| String(s)));
 
 named!(SGCI<C1>,
-	value!(SingleGraphicCharacter,
-		alt!(tag!(b"\x99") | tag!(b"\x1B\x59"))));
+	value!(SingleGraphicCharacter));
 
 named!(SCI<C1>,
-	chain!(
-		alt!(tag!(b"\x9A") | tag!(b"\x1B\x5A")) ~
-		string: string,
-
-		|| SingleCharacter(string)));
+	map!(string, |s| SingleCharacter(s)));
 
 named!(CSI<C1>,
-	chain!(
-		alt!(tag!(b"\x9B") | tag!(b"\x1B\x5B")) ~
-		res: call!(::CSI::parse),
-
-		|| ControlSequence(res)));
+	map!(call!(::CSI::parse), |res| ControlSequence(res)));
 
 named!(ST,
 	alt!(tag!(b"\x9C") | tag!(b"\x1B\x5C")));
 
 named!(OSC<C1>,
-	chain!(
-		alt!(tag!(b"\x9D") | tag!(b"\x1B\x5D")) ~
-		string: string,
-
-		|| OperatingSystemCommand(string)));
+	map!(string, |s| OperatingSystemCommand(s)));
 
 named!(PM<C1>,
-	chain!(
-		alt!(tag!(b"\x9E") | tag!(b"\x1B\x5E")) ~
-		string: string,
-
-		|| PrivacyMessage(string)));
+	map!(string, |s| PrivacyMessage(s)));
 
 named!(APC<C1>,
-	chain!(
-		alt!(tag!(b"\x9F") | tag!(b"\x1B\x5F")) ~
-		string: string,
+	map!(string, |s| ApplicationProgramCommand(s)));
 
-		|| ApplicationProgramCommand(string)));
+named!(string<&str>,
+	map!(terminated!(take_while!(is_string), ST),
+		|s| unsafe { str::from_utf8_unchecked(s) }));
+
+fn is_string(b: u8) -> bool {
+	(b >= 0x08 && b <= 0x0D) || (b >= 0x20 && b <= 0x7E)
+}
 
 pub mod shim {
 	pub use super::C1 as T;

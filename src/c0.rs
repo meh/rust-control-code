@@ -162,137 +162,136 @@ impl Format for C0 {
 }
 
 named!(pub parse<C0>,
-	alt!(NUL | SOH | STX | ETX | EOT | ENQ | ACK | BEL | BS | HT | LF | VT | FF |
-	     CR | SS | SI | DLE | DC1 | DC2 | DC3 | DC4 | NAK | SYN | ETB | CAN | EM |
-	     SUB | ESC | FS | GS | RS | US));
+	switch!(take!(1),
+		b"\x08" => call!(BS)  |
+		b"\x09" => call!(HT)  |
+		b"\x0A" => call!(LF)  |
+		b"\x0D" => call!(CR)  |
+		b"\x1B" => call!(ESC) |
+
+		b"\x00" => call!(NUL) |
+		b"\x01" => call!(SOH) |
+		b"\x02" => call!(STX) |
+		b"\x03" => call!(ETX) |
+		b"\x04" => call!(EOT) |
+		b"\x05" => call!(ENQ) |
+		b"\x06" => call!(ACK) |
+		b"\x07" => call!(BEL) |
+		b"\x0B" => call!(VT)  |
+		b"\x0C" => call!(FF)  |
+		b"\x0E" => call!(SS)  |
+		b"\x0F" => call!(SI)  |
+		b"\x10" => call!(DLE) |
+		b"\x11" => call!(DC1) |
+		b"\x12" => call!(DC2) |
+		b"\x13" => call!(DC3) |
+		b"\x14" => call!(DC4) |
+		b"\x15" => call!(NAK) |
+		b"\x16" => call!(SYN) |
+		b"\x17" => call!(ETB) |
+		b"\x18" => call!(CAN) |
+		b"\x19" => call!(EM)  |
+		b"\x1A" => call!(SUB) |
+		b"\x1C" => call!(FS)  |
+		b"\x1D" => call!(GS)  |
+		b"\x1E" => call!(RS)  |
+		b"\x1F" => call!(US)));
 
 named!(NUL<C0>,
-	value!(Null,
-		char!(0x00)));
+	value!(Null));
 
 named!(SOH<C0>,
-	value!(StartHeading,
-		char!(0x01)));
+	value!(StartHeading));
 
 named!(STX<C0>,
-	value!(StartText,
-		char!(0x02)));
+	value!(StartText));
 
 named!(ETX<C0>,
-	value!(EndText,
-		char!(0x03)));
+	value!(EndText));
 
 named!(EOT<C0>,
-	value!(EndTransmission,
-		char!(0x04)));
+	value!(EndTransmission));
 
 named!(ENQ<C0>,
-	value!(Enquiry,
-		char!(0x05)));
+	value!(Enquiry));
 
 named!(ACK<C0>,
-	value!(Acknowledge,
-		char!(0x06)));
+	value!(Acknowledge));
 
 named!(BEL<C0>,
-	value!(Bell,
-		char!(0x07)));
+	value!(Bell));
 
 named!(BS<C0>,
-	value!(Backspace,
-		char!(0x08)));
+	value!(Backspace));
 
 named!(HT<C0>,
-	value!(HorizontalTabulation,
-		char!(0x09)));
+	value!(HorizontalTabulation));
 
 named!(LF<C0>,
-	value!(LineFeed,
-		char!(0x0A)));
+	value!(LineFeed));
 
 named!(VT<C0>,
-	value!(VerticalTabulation,
-		char!(0x0B)));
+	value!(VerticalTabulation));
 
 named!(FF<C0>,
-	value!(FormFeed,
-		char!(0x0C)));
+	value!(FormFeed));
 
 named!(CR<C0>,
-	value!(CarriageReturn,
-		char!(0x0D)));
+	value!(CarriageReturn));
 
 named!(SS<C0>,
-	value!(ShiftOut,
-		char!(0x0E)));
+	value!(ShiftOut));
 
 named!(SI<C0>,
-	value!(ShiftIn,
-		char!(0x0F)));
+	value!(ShiftIn));
 
 named!(DLE<C0>,
-	value!(DataLinkEscape,
-		char!(0x10)));
+	value!(DataLinkEscape));
 
 named!(DC1<C0>,
-	value!(DeviceControlOne,
-		char!(0x11)));
+	value!(DeviceControlOne));
 
 named!(DC2<C0>,
-	value!(DeviceControlTwo,
-		char!(0x12)));
+	value!(DeviceControlTwo));
 
 named!(DC3<C0>,
-	value!(DeviceControlThree,
-		char!(0x13)));
+	value!(DeviceControlThree));
 
 named!(DC4<C0>,
-	value!(DeviceControlFour,
-		char!(0x14)));
+	value!(DeviceControlFour));
 
 named!(NAK<C0>,
-	value!(NegativeAcknowledge,
-		char!(0x15)));
+	value!(NegativeAcknowledge));
 
 named!(SYN<C0>,
-	value!(SynchronousIdle,
-		char!(0x16)));
+	value!(SynchronousIdle));
 
 named!(ETB<C0>,
-	value!(EndTransmissionBlock,
-		char!(0x17)));
+	value!(EndTransmissionBlock));
 
 named!(CAN<C0>,
-	value!(Cancel,
-		char!(0x18)));
+	value!(Cancel));
 
 named!(EM<C0>,
-	value!(EndMedium,
-		char!(0x19)));
+	value!(EndMedium));
 
 named!(SUB<C0>,
-	value!(Substitute,
-		char!(0x1A)));
+	value!(Substitute));
 
 named!(ESC<C0>,
-	value!(Escape,
-		char!(0x1B)));
+	value!(Escape));
 
 named!(FS<C0>,
-	value!(FileSeparator,
-		char!(0x1C)));
+	value!(FileSeparator));
 
 named!(GS<C0>,
-	value!(GroupSeparator,
-		char!(0x1D)));
+	value!(GroupSeparator));
 
 named!(RS<C0>,
-	value!(RecordSeparator,
-		char!(0x1E)));
+	value!(RecordSeparator));
 
 named!(US<C0>,
-	value!(UnitSeparator,
-		char!(0x1F)));
+	value!(UnitSeparator));
 
 pub mod shim {
 	pub use super::C0 as T;
