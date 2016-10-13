@@ -163,10 +163,10 @@ impl Format for C0 {
 
 named!(pub parse<C0>,
 	switch!(take!(1),
+		b"\x0D" => call!(CR)  |
+		b"\x0A" => call!(LF)  |
 		b"\x08" => call!(BS)  |
 		b"\x09" => call!(HT)  |
-		b"\x0A" => call!(LF)  |
-		b"\x0D" => call!(CR)  |
 		b"\x1B" => call!(ESC) |
 
 		b"\x00" => call!(NUL) |

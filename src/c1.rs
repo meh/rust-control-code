@@ -197,6 +197,8 @@ named!(pub parse<C1>,
 
 named!(one<C1>,
 	switch!(take!(1),
+		b"\x9B" => call!(CSI) |
+
 		b"\x80" => call!(PAD)  |
 		b"\x81" => call!(HOP)  |
 		b"\x82" => call!(BPH)  |
@@ -224,7 +226,6 @@ named!(one<C1>,
 		b"\x98" => call!(SOS)  |
 		b"\x99" => call!(SGCI) |
 		b"\x9A" => call!(SCI)  |
-		b"\x9B" => call!(CSI)  |
 		b"\x9D" => call!(OSC)  |
 		b"\x9E" => call!(PM)   |
 		b"\x9F" => call!(APC)));
@@ -232,6 +233,8 @@ named!(one<C1>,
 named!(two<C1>,
 	chain!(tag!(b"\x1B") ~
 		res: switch!(take!(1),
+			b"\x5B" => call!(CSI) |
+
 			b"\x40" => call!(PAD)  |
 			b"\x41" => call!(HOP)  |
 			b"\x42" => call!(BPH)  |
@@ -259,7 +262,6 @@ named!(two<C1>,
 			b"\x58" => call!(SOS)  |
 			b"\x59" => call!(SGCI) |
 			b"\x5A" => call!(SCI)  |
-			b"\x5B" => call!(CSI)  |
 			b"\x5D" => call!(OSC)  |
 			b"\x5E" => call!(PM)   |
 			b"\x5F" => call!(APC)),
