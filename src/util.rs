@@ -15,7 +15,9 @@
 #[macro_export]
 macro_rules! arg {
 	($args:ident[$index:tt] => $default:tt) => (
-		$args.get($index).and_then(|v| *v).unwrap_or($default)
+		$args.get($index)
+			.and_then(|v| v.map(|v| if v == 0 { $default } else { v }))
+			.unwrap_or($default)
 	);
 
 	($args:ident[$index:tt]) => (
