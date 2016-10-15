@@ -34,6 +34,7 @@ pub enum Mode {
 	TransferTermination,
 	SelectedAreaTransfer,
 	TabulationStop,
+	LineFeed,
 	GraphicRenditionCombination,
 	ZeroDefault,
 }
@@ -59,6 +60,7 @@ impl Mode {
 			16 => Ok(Mode::TransferTermination),
 			17 => Ok(Mode::SelectedAreaTransfer),
 			18 => Ok(Mode::TabulationStop),
+			20 => Ok(Mode::LineFeed),
 			21 => Ok(Mode::GraphicRenditionCombination),
 			22 => Ok(Mode::ZeroDefault),
 			_  => Err(nom::Err::Code(nom::ErrorKind::Custom(9004))),
@@ -87,6 +89,7 @@ impl Into<u32> for Mode {
 			Mode::TransferTermination         => 16,
 			Mode::SelectedAreaTransfer        => 17,
 			Mode::TabulationStop              => 18,
+			Mode::LineFeed                    => 20,
 			Mode::GraphicRenditionCombination => 21,
 			Mode::ZeroDefault                 => 22,
 		}
