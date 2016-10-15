@@ -400,7 +400,7 @@ pub use self::direction::Direction;
 mod unit;
 pub use self::unit::Unit;
 
-const DIGIT:    &'static [u8] = b"0123456789";
+const DIGIT:    &'static [u8] = b"0123456789\x08\x09\x0A\x0B\x0D";
 const LETTER:   &'static [u8] = b"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
 const MODIFIER: &'static [u8] = b" !\"#$%&'()*+,-./";
 
@@ -435,8 +435,22 @@ named!(parameter<Option<u32> >,
 			number: is_a!(DIGIT) ~
 			opt!(char!(';')),
 
-			|| number) => { |n|
-				Some(u32::from_str_radix(unsafe { str::from_utf8_unchecked(n) }, 10).unwrap()) }));
+			|| number) => { |n| Some(number(n)) }));
+
+fn number(i: &[u8]) -> u32 {
+	let mut result = 0;
+
+	for &ch in i {
+		if ch >= 0x08 && ch <= 0x0D {
+			continue;
+		}
+
+		result *= 10;
+		result += (ch - b'0') as u32;
+	}
+
+	result
+}
 
 fn standard(id: char, modifier: Option<char>, args: Vec<Option<u32>>) -> Option<CSI> {
 	match (id, modifier) {
