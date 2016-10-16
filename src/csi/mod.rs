@@ -438,18 +438,17 @@ named!(parameter<Option<u32> >,
 			|| number) => { |n| Some(number(n)) }));
 
 fn number(i: &[u8]) -> u32 {
-	let mut result = 0;
+	let mut n = 0;
 
 	for &ch in i {
-		if ch >= 0x08 && ch <= 0x0D {
-			continue;
-		}
+		let d = (ch as u32).wrapping_sub(b'0' as u32);
 
-		result *= 10;
-		result += (ch - b'0') as u32;
+		if d <= 9 {
+			n = (n * 10) + d;
+		}
 	}
 
-	result
+	n
 }
 
 fn standard(id: char, modifier: Option<char>, args: Vec<Option<u32>>) -> Option<CSI> {
