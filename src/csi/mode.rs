@@ -17,7 +17,7 @@ use nom;
 #[derive(Eq, PartialEq, Copy, Clone, Debug)]
 pub enum Mode {
 	GuardedAreaTransfer,
-	KeyboardAction,
+	KeyboardLock,
 	ControlRepresentation,
 	InsertionReplacement,
 	StatusReportTransfer,
@@ -43,7 +43,7 @@ impl Mode {
 	pub fn parse<'a>(value: u32) -> Result<Self, nom::Err<&'a [u8]>> {
 		match value {
 			1  => Ok(Mode::GuardedAreaTransfer),
-			2  => Ok(Mode::KeyboardAction),
+			2  => Ok(Mode::KeyboardLock),
 			3  => Ok(Mode::ControlRepresentation),
 			4  => Ok(Mode::InsertionReplacement),
 			5  => Ok(Mode::StatusReportTransfer),
@@ -72,7 +72,7 @@ impl Into<u32> for Mode {
 	fn into(self) -> u32 {
 		match self {
 			Mode::GuardedAreaTransfer         => 1,
-			Mode::KeyboardAction              => 2,
+			Mode::KeyboardLock                => 2,
 			Mode::ControlRepresentation       => 3,
 			Mode::InsertionReplacement        => 4,
 			Mode::StatusReportTransfer        => 5,

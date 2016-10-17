@@ -1377,7 +1377,7 @@ mod test {
 				CSI::Reset(vec![CSI::Mode::GuardedAreaTransfer]));
 
 			test!(b"\x1B[2l" =>
-				CSI::Reset(vec![CSI::Mode::KeyboardAction]));
+				CSI::Reset(vec![CSI::Mode::KeyboardLock]));
 
 			test!(b"\x1B[3l" =>
 				CSI::Reset(vec![CSI::Mode::ControlRepresentation]));
@@ -1524,7 +1524,7 @@ mod test {
 				CSI::Set(vec![CSI::Mode::GuardedAreaTransfer]));
 
 			test!(b"\x1B[2h" =>
-				CSI::Set(vec![CSI::Mode::KeyboardAction]));
+				CSI::Set(vec![CSI::Mode::KeyboardLock]));
 
 			test!(b"\x1B[3h" =>
 				CSI::Set(vec![CSI::Mode::ControlRepresentation]));
@@ -2060,7 +2060,7 @@ mod test {
 		#[test]
 		fn rm() {
 			test!(CSI::Reset(vec![CSI::Mode::GuardedAreaTransfer]));
-			test!(CSI::Reset(vec![CSI::Mode::KeyboardAction]));
+			test!(CSI::Reset(vec![CSI::Mode::KeyboardLock]));
 			test!(CSI::Reset(vec![CSI::Mode::ControlRepresentation]));
 			test!(CSI::Reset(vec![CSI::Mode::InsertionReplacement]));
 			test!(CSI::Reset(vec![CSI::Mode::StatusReportTransfer]));
@@ -2132,7 +2132,7 @@ mod test {
 		#[test]
 		fn sm() {
 			test!(CSI::Set(vec![CSI::Mode::GuardedAreaTransfer]));
-			test!(CSI::Set(vec![CSI::Mode::KeyboardAction]));
+			test!(CSI::Set(vec![CSI::Mode::KeyboardLock]));
 			test!(CSI::Set(vec![CSI::Mode::ControlRepresentation]));
 			test!(CSI::Set(vec![CSI::Mode::InsertionReplacement]));
 			test!(CSI::Set(vec![CSI::Mode::StatusReportTransfer]));
