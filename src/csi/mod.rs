@@ -81,6 +81,7 @@ pub enum CSI {
 	SizeUnit(Unit),
 	SpaceWidth(u32),
 	ScrollUp(u32),
+	TabulationClear(Tabulation),
 	LinePosition(u32),
 
 	Unknown(u8, Option<u8>, Vec<Option<u32>>),
@@ -349,6 +350,9 @@ impl Format for CSI {
 			ScrollUp(n) =>
 				write!("S", [n]),
 
+			TabulationClear(value) =>
+				write!("g", [value]),
+
 			LinePosition(n) =>
 				write!("d", [n]),
 
@@ -500,6 +504,7 @@ fn standard(id: char, modifier: Option<char>, args: Vec<Option<u32>>) -> Option<
 		('h',  None) => SM(&args),
 		('[',  None) => SRS(&args),
 		('S',  None) => SU(&args),
+		('g',  None) => TBC(&args),
 
 		('T', Some(' ')) => DTA(&args),
 		('W', Some(' ')) => FNK(&args),
@@ -795,6 +800,9 @@ with_args!(SSW<1, args>,
 
 with_args!(SU<1, args>,
 	ScrollUp(arg!(args[0] => 1)));
+
+with_args!(TBC<1, args>, ?
+	Tabulation::parse(arg!(args[0] => 0)).map(TabulationClear));
 
 with_args!(VPA<1, args>,
 	LinePosition(arg!(args[0] => 1)));
@@ -1693,6 +1701,33 @@ mod test {
 		}
 
 		#[test]
+		fn tbc() {
+			test!(b"\x1B[g" =>
+				CSI::TabulationClear(CSI::Tabulation::Character));
+
+			test!(b"\x1B[0g" =>
+				CSI::TabulationClear(CSI::Tabulation::Character));
+
+			test!(b"\x1B[1g" =>
+				CSI::TabulationClear(CSI::Tabulation::Line));
+
+			test!(b"\x1B[2g" =>
+				CSI::TabulationClear(CSI::Tabulation::ClearCharacter));
+
+			test!(b"\x1B[3g" =>
+				CSI::TabulationClear(CSI::Tabulation::ClearLine));
+
+			test!(b"\x1B[4g" =>
+				CSI::TabulationClear(CSI::Tabulation::ClearLineAllCharacters));
+
+			test!(b"\x1B[5g" =>
+				CSI::TabulationClear(CSI::Tabulation::ClearAllCharacters));
+
+			test!(b"\x1B[6g" =>
+				CSI::TabulationClear(CSI::Tabulation::ClearAllLines));
+		}
+
+		#[test]
 		fn vpa() {
 			test!(b"\x1B[d" =>
 				CSI::LinePosition(1));
@@ -2200,6 +2235,17 @@ mod test {
 		fn su() {
 			test!(CSI::ScrollUp(1));
 			test!(CSI::ScrollUp(37));
+		}
+
+		#[test]
+		fn tbc() {
+			test!(CSI::TabulationClear(CSI::Tabulation::Character));
+			test!(CSI::TabulationClear(CSI::Tabulation::Line));
+			test!(CSI::TabulationClear(CSI::Tabulation::ClearCharacter));
+			test!(CSI::TabulationClear(CSI::Tabulation::ClearLine));
+			test!(CSI::TabulationClear(CSI::Tabulation::ClearLineAllCharacters));
+			test!(CSI::TabulationClear(CSI::Tabulation::ClearAllCharacters));
+			test!(CSI::TabulationClear(CSI::Tabulation::ClearAllLines));
 		}
 
 		#[test]
