@@ -26,3 +26,50 @@ macro_rules! arg {
 		$args.get($index).and_then(|v| *v)
 	);
 }
+
+macro_rules! with_args {
+	($name:ident<$n:tt, $params:ident> -> $ty:ty, ? $body:expr) => (
+		fn $name($params: &[Option<u32>]) -> Option<$ty> {
+			if $params.len() <= $n {
+				$body.ok()
+			}
+			else {
+				None
+			}
+		}
+	);
+
+	($name:ident<$n:tt, $params:ident> -> $ty:ty, $body:expr) => (
+		fn $name($params: &[Option<u32>]) -> Option<$ty> {
+			if $params.len() <= $n {
+				Some($body)
+			}
+			else {
+				None
+			}
+		}
+	);
+
+	($name:ident<$params:ident> -> $ty:ty, ? $body:expr) => (
+		fn $name($params: &[Option<u32>]) -> Option<$ty> {
+			$body.ok()
+		}
+	);
+
+	($name:ident<$params:ident> -> $ty:ty, $body:expr) => (
+		fn $name($params: &[Option<u32>]) -> Option<$ty> {
+			Some($body)
+		}
+	);
+
+	($name:ident -> $ty:ty, $body:expr) => (
+		fn $name(args: &[Option<u32>]) -> Option<$ty> {
+			if args.is_empty() {
+				Some($body)
+			}
+			else {
+				None
+			}
+		}
+	);
+}

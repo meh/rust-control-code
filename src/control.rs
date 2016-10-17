@@ -16,12 +16,13 @@ use std::str;
 use std::io::{self, Write};
 use nom::{self, IResult, Needed};
 
-use {Format, C0, C1, CSI, SGR};
+use {Format, C0, C1, DEC, CSI, SGR};
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub enum Control<'a> {
 	C0(C0::T),
 	C1(C1::T<'a>),
+	DEC(DEC::T),
 	None(&'a str),
 }
 
@@ -34,6 +35,12 @@ impl<'a> From<C0::T> for Control<'a> {
 impl<'a> From<C1::T<'a>> for Control<'a> {
 	fn from(value: C1::T<'a>) -> Control<'a> {
 		Control::C1(value)
+	}
+}
+
+impl<'a> From<DEC::T> for Control<'a> {
+	fn from(value: DEC::T) -> Control<'a> {
+		Control::DEC(value)
 	}
 }
 
@@ -65,6 +72,9 @@ impl<'a> Format for Control<'a> {
 				value.fmt(f, wide),
 
 			&Control::C1(ref value) =>
+				value.fmt(f, wide),
+
+			&Control::DEC(ref value) =>
 				value.fmt(f, wide),
 		}
 	}
@@ -122,5 +132,29 @@ fn string(i: &[u8]) -> IResult<&[u8], Control> {
 
 named!(control<Control>,
 	alt!(
-		map!(C1::parse, |c| Control::C1(c)) |
-		map!(C0::parse, |c| Control::C0(c))));
+		map!(DEC::parse, |c| Control::DEC(c))
+		|
+		map!(C1::parse, |c| match c {
+			C1::ControlSequence(CSI::Unknown(id, modifier, args)) => {
+				if let Some(c) = DEC::CSI::normal(id, modifier, &args) {
+					Control::DEC(c)
+				}
+				else {
+					Control::C1(C1::ControlSequence(CSI::Unknown(id, modifier, args)))
+				}
+			}
+
+			C1::ControlSequence(CSI::Private(id, modifier, args)) => {
+				if let Some(c) = DEC::CSI::private(id, modifier, &args) {
+					Control::DEC(c)
+				}
+				else {
+					Control::C1(C1::ControlSequence(CSI::Private(id, modifier, args)))
+				}
+			}
+
+			_ =>
+				Control::C1(c)
+		})
+		|
+		map!(C0::parse,  |c| Control::C0(c))));

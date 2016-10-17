@@ -533,105 +533,58 @@ fn standard(id: char, modifier: Option<char>, args: Vec<Option<u32>>) -> Option<
 	}
 }
 
-macro_rules! with_args {
-	($name:ident<$n:tt, $params:ident>, ? $body:expr) => (
-		fn $name($params: &[Option<u32>]) -> Option<CSI> {
-			if $params.len() <= $n {
-				$body.ok()
-			}
-			else {
-				None
-			}
-		}
-	);
-
-	($name:ident<$n:tt, $params:ident>, $body:expr) => (
-		fn $name($params: &[Option<u32>]) -> Option<CSI> {
-			if $params.len() <= $n {
-				Some($body)
-			}
-			else {
-				None
-			}
-		}
-	);
-
-	($name:ident<$params:ident>, ? $body:expr) => (
-		fn $name($params: &[Option<u32>]) -> Option<CSI> {
-			$body.ok()
-		}
-	);
-
-	($name:ident<$params:ident>, $body:expr) => (
-		fn $name($params: &[Option<u32>]) -> Option<CSI> {
-			Some($body)
-		}
-	);
-
-	($name:ident, $body:expr) => (
-		fn $name(args: &[Option<u32>]) -> Option<CSI> {
-			if args.is_empty() {
-				Some($body)
-			}
-			else {
-				None
-			}
-		}
-	);
-}
-
-with_args!(CBT<1, args>,
+with_args!(CBT<1, args> -> CSI,
 	CursorBackTabulation(arg!(args[0] => 1)));
 
-with_args!(CHA<1, args>,
+with_args!(CHA<1, args> -> CSI,
 	CursorHorizontalPosition(arg!(args[0] => 1) - 1));
 
-with_args!(CHT<1, args>,
+with_args!(CHT<1, args> -> CSI,
 	CursorForwardTabulation(arg!(args[0] => 1)));
 
-with_args!(CNL<1, args>,
+with_args!(CNL<1, args> -> CSI,
 	CursorNextLine(arg!(args[0] => 1)));
 
-with_args!(CPL<1, args>,
+with_args!(CPL<1, args> -> CSI,
 	CursorPreviousLine(arg!(args[0] => 1)));
 
-with_args!(CPR<2, args>,
+with_args!(CPR<2, args> -> CSI,
 	CursorPositionReport { y: arg!(args[0] => 1) - 1, x: arg!(args[1] => 1) - 1 });
 
-with_args!(CTC<1, args>, ?
+with_args!(CTC<1, args> -> CSI, ?
 	Tabulation::parse(arg!(args[0] => 0)).map(CursorTabulationControl));
 
-with_args!(CUB<1, args>,
+with_args!(CUB<1, args> -> CSI,
 	CursorBack(arg!(args[0] => 1)));
 
-with_args!(CUD<1, args>,
+with_args!(CUD<1, args> -> CSI,
 	CursorDown(arg!(args[0] => 1)));
 
-with_args!(CUF<1, args>,
+with_args!(CUF<1, args> -> CSI,
 	CursorForward(arg!(args[0] => 1)));
 
-with_args!(CUP<2, args>,
+with_args!(CUP<2, args> -> CSI,
 	CursorPosition { y: arg!(args[0] => 1) - 1, x: arg!(args[1] => 1) - 1 });
 
-with_args!(CUU<1, args>,
+with_args!(CUU<1, args> -> CSI,
 	CursorUp(arg!(args[0] => 1)));
 
-with_args!(CVT<1, args>,
+with_args!(CVT<1, args> -> CSI,
 	CursorLineTabulation(arg!(args[0] => 1)));
 
-with_args!(DA<1, args>,
+with_args!(DA<1, args> -> CSI,
 	DeviceAttributes(arg!(args[0] => 0)));
 
-with_args!(DAQ<1, args>, ?
+with_args!(DAQ<1, args> -> CSI, ?
 	Qualification::parse(arg!(args[0] => 0)).map(DefineAreaQualification));
 
-with_args!(DCH<1, args>,
+with_args!(DCH<1, args> -> CSI,
 	DeleteCharacter(arg!(args[0] => 1)));
 
-with_args!(DL<1, args>,
+with_args!(DL<1, args> -> CSI,
 	DeleteLine(arg!(args[0] => 1)));
 
-with_args!(DSR<1, args>, ?
+with_args!(DSR<1, args> -> CSI, ?
 	match arg!(args[0] => 0) {
 		6 =>
 			Ok(DeviceStatusReport),
@@ -640,109 +593,109 @@ with_args!(DSR<1, args>, ?
 			Err(nom::Err::Code::<&[u8], u32>(ErrorKind::Custom(9004)))
 	});
 
-with_args!(DTA<2, args>,
+with_args!(DTA<2, args> -> CSI,
 	DimensionTextArea(arg!(args[0] => 0), arg!(args[1] => 0)));
 
-with_args!(EA<1, args>, ?
+with_args!(EA<1, args> -> CSI, ?
 	Erase::parse(arg!(args[0] => 0)).map(EraseArea));
 
-with_args!(ECH<1, args>,
+with_args!(ECH<1, args> -> CSI,
 	EraseCharacter(arg!(args[0] => 1)));
 
-with_args!(ED<1, args>, ?
+with_args!(ED<1, args> -> CSI, ?
 	Erase::parse(arg!(args[0] => 0)).map(EraseDisplay));
 
-with_args!(EF<1, args>, ?
+with_args!(EF<1, args> -> CSI, ?
 	Erase::parse(arg!(args[0] => 0)).map(EraseField));
 
-with_args!(EL<1, args>, ?
+with_args!(EL<1, args> -> CSI, ?
 	Erase::parse(arg!(args[0] => 0)).map(EraseLine));
 
-with_args!(FNK<1, args>,
+with_args!(FNK<1, args> -> CSI,
 	FunctionKey(arg!(args[0] => 0)));
 
-with_args!(FNT<2, args>,
+with_args!(FNT<2, args> -> CSI,
 	SelectFont(arg!(args[0] => 0), arg!(args[1] => 0)));
 
-with_args!(GCC<1, args>, ?
+with_args!(GCC<1, args> -> CSI, ?
 	Combination::parse(arg!(args[0] => 0)).map(GraphicCharacterCombination));
 
-with_args!(GSM<2, args>,
+with_args!(GSM<2, args> -> CSI,
 	GraphicSizeModification { height: arg!(args[0] => 100), width: arg!(args[1] => 100) });
 
-with_args!(HPA<1, args>,
+with_args!(HPA<1, args> -> CSI,
 	CursorHorizontalPosition(arg!(args[0] => 1) - 1));
 
-with_args!(HPB<1, args>,
+with_args!(HPB<1, args> -> CSI,
 	CursorBack(arg!(args[0] => 1)));
 
-with_args!(HPR<1, args>,
+with_args!(HPR<1, args> -> CSI,
 	CursorForward(arg!(args[0] => 1)));
 
-with_args!(HVP<2, args>,
+with_args!(HVP<2, args> -> CSI,
 	CursorPosition{ y: arg!(args[0] => 1) - 1, x: arg!(args[1] => 1) - 1 });
 
-with_args!(ICH<1, args>,
+with_args!(ICH<1, args> -> CSI,
 	InsertCharacter(arg!(args[0] => 1)));
 
-with_args!(IDCS<1, args>,
+with_args!(IDCS<1, args> -> CSI,
 	IdentifyDeviceControlString(arg!(args[0])));
 
-with_args!(IGS<1, args>,
+with_args!(IGS<1, args> -> CSI,
 	IdentifyGraphicSubrepertoire(arg!(args[0])));
 
-with_args!(IL<1, args>,
+with_args!(IL<1, args> -> CSI,
 	InsertLine(arg!(args[0] => 1)));
 
-with_args!(JFY<args>,
+with_args!(JFY<args> -> CSI,
 	Justify(args.to_vec()));
 
-with_args!(MC<1, args>, ?
+with_args!(MC<1, args> -> CSI, ?
 	Copy::parse(arg!(args[0] => 0)).map(MediaCopy));
 
-with_args!(NP<1, args>,
+with_args!(NP<1, args> -> CSI,
 	NextPage(arg!(args[0] => 1)));
 
-with_args!(PEC<1, args>, ?
+with_args!(PEC<1, args> -> CSI, ?
 	Expansion::parse(arg!(args[0] => 0)).map(Presentation));
 
-with_args!(PFS<1, args>,
+with_args!(PFS<1, args> -> CSI,
 	PageFormat(arg!(args[0] => 0)));
 
-with_args!(PP<1, args>,
+with_args!(PP<1, args> -> CSI,
 	PrecedingPage(arg!(args[0] => 1)));
 
-with_args!(PPA<1, args>,
+with_args!(PPA<1, args> -> CSI,
 	PagePosition(arg!(args[0] => 1)));
 
-with_args!(PPB<1, args>,
+with_args!(PPB<1, args> -> CSI,
 	PageBack(arg!(args[0] => 1)));
 
-with_args!(PPR<1, args>,
+with_args!(PPR<1, args> -> CSI,
 	PageForward(arg!(args[0] => 1)));
 
-with_args!(PTX<1, args>, ?
+with_args!(PTX<1, args> -> CSI, ?
 	Parallel::parse(arg!(args[0] => 0)).map(ParallelText));
 
-with_args!(QUAD<args>, ?
+with_args!(QUAD<args> -> CSI, ?
 	args.iter().map(|d| d.unwrap_or(0))
 		.map(Disposition::parse)
 		.collect::<Result<Vec<_>, _>>()
 		.map(GraphicDisposition));
 
-with_args!(RCP,
+with_args!(RCP -> CSI,
 	RestoreCursor);
 
-with_args!(REP<1, args>,
+with_args!(REP<1, args> -> CSI,
 	Repeat(arg!(args[0] => 1)));
 
-with_args!(RM<args>, ?
+with_args!(RM<args> -> CSI, ?
 	args.iter().map(|d| d.unwrap_or(0))
 		.map(Mode::parse)
 		.collect::<Result<Vec<_>, _>>()
 		.map(Reset));
 
-with_args!(SCO<1, args>, ?
+with_args!(SCO<1, args> -> CSI, ?
 	match arg!(args[0] => 0) {
 		0 => Ok(CharacterOrientation(0)),
 		1 => Ok(CharacterOrientation(45)),
@@ -755,62 +708,62 @@ with_args!(SCO<1, args>, ?
 		_ => Err(nom::Err::Code::<&[u8], u32>(ErrorKind::Custom(9002))),
 	});
 
-with_args!(SCP,
+with_args!(SCP -> CSI,
 	SaveCursor);
 
-with_args!(SCS<1, args>,
+with_args!(SCS<1, args> -> CSI,
 	CharacterSpacing(arg!(args[0] => 1)));
 
-with_args!(SD<1, args>,
+with_args!(SD<1, args> -> CSI,
 	ScrollDown(arg!(args[0] => 1)));
 
-with_args!(SIMD<1, args>, ?
+with_args!(SIMD<1, args> -> CSI, ?
 	Direction::parse(arg!(args[0] => 0)).map(Movement));
 
-with_args!(SGR<args>, ?
+with_args!(SGR<args> -> CSI, ?
 	::SGR::parse(args).map(|v| SelectGraphicalRendition(v)));
 
-with_args!(SL<1, args>,
+with_args!(SL<1, args> -> CSI,
 	ScrollLeft(arg!(args[0] => 1)));
 
-with_args!(SLS<1, args>,
+with_args!(SLS<1, args> -> CSI,
 	LineSpacing(arg!(args[0] => 1)));
 
-with_args!(SM<args>, ?
+with_args!(SM<args> -> CSI, ?
 	args.iter().map(|d| d.unwrap_or(0))
 		.map(Mode::parse)
 		.collect::<Result<Vec<_>, _>>()
 		.map(Set));
 
-with_args!(SR<1, args>,
+with_args!(SR<1, args> -> CSI,
 	ScrollRight(arg!(args[0] => 1)));
 
-with_args!(SRS<1, args>, ?
+with_args!(SRS<1, args> -> CSI, ?
 	match arg!(args[0] => 0) {
 		0 => Ok(ReverseString(false)),
 		1 => Ok(ReverseString(true)),
 		_ => Err(nom::Err::Code::<&[u8], u32>(ErrorKind::Custom(9002))),
 	});
 
-with_args!(SSU<1, args>, ?
+with_args!(SSU<1, args> -> CSI, ?
 	Unit::parse(arg!(args[0] => 0)).map(SizeUnit));
 
-with_args!(SSW<1, args>,
+with_args!(SSW<1, args> -> CSI,
 	SpaceWidth(arg!(args[0] => 1)));
 
-with_args!(SU<1, args>,
+with_args!(SU<1, args> -> CSI,
 	ScrollUp(arg!(args[0] => 1)));
 
-with_args!(TBC<1, args>, ?
+with_args!(TBC<1, args> -> CSI, ?
 	Tabulation::parse(arg!(args[0] => 0)).map(TabulationClear));
 
-with_args!(VPA<1, args>,
+with_args!(VPA<1, args> -> CSI,
 	LinePosition(arg!(args[0] => 1)));
 
-with_args!(VPB<1, args>,
+with_args!(VPB<1, args> -> CSI,
 	CursorUp(arg!(args[0] => 1)));
 
-with_args!(VPR<1, args>,
+with_args!(VPR<1, args> -> CSI,
 	CursorDown(arg!(args[0] => 1)));
 
 pub mod shim {

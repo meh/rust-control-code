@@ -12,33 +12,8 @@
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
-#![allow(non_snake_case)]
-#![recursion_limit="100"]
-
-#[macro_use]
-pub extern crate nom;
-pub use nom::IResult as Result;
-
-#[macro_use]
-mod util;
-
-mod control;
-pub use control::{Control, parse};
-
-mod format;
-pub use format::{Format, format, format_to};
-
-mod c0;
-pub use c0::shim as C0;
-
-mod c1;
-pub use c1::shim as C1;
-
-mod dec;
-pub use dec::shim as DEC;
-
-mod csi;
-pub use csi::shim as CSI;
-
-mod sgr;
-pub use sgr::shim as SGR;
+#[derive(Eq, PartialEq, Copy, Clone, Debug)]
+pub enum Half {
+	Top,
+	Bottom,
+}
