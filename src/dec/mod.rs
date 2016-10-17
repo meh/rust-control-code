@@ -13,10 +13,11 @@
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
 use std::io::{self, Write};
+use std::str;
 use {Format};
 
 #[derive(Eq, PartialEq, Clone, Debug)]
-pub enum DEC {
+pub enum DEC<'a> {
 	AlignmentTest,
 	SaveCursor,
 	RestoreCursor,
@@ -35,6 +36,10 @@ pub enum DEC {
 	SingleWidth,
 	CursorStyle(u8),
 	SoftReset,
+	ResetInitial,
+	SevenBits,
+	EightBits,
+	DefineFunctionKey(u8, &'a str),
 
 	ScrollRegion {
 		top:    u32,
@@ -44,7 +49,7 @@ pub enum DEC {
 
 use self::DEC::*;
 
-impl Format for DEC {
+impl<'a> Format for DEC<'a> {
 	fn fmt<W: Write>(&self, mut f: W, wide: bool) -> io::Result<()> {
 		Ok(())
 	}
@@ -69,6 +74,12 @@ named!(pub parse<DEC>,
 				b"6" => call!(DECDWL)  |
 				b"8" => call!(DECALN)) |
 
+			b" " => switch!(take!(1),
+				b"F" => call!(S7C1T)  |
+				b"G" => call!(S8C1T)) |
+
+			b"Q" => call!(SCODFK) |
+
 			b"(" => map!(SCS, |c| SelectCharset(0, c)) |
 			b")" => map!(SCS, |c| SelectCharset(1, c)) |
 			b"*" => map!(SCS, |c| SelectCharset(2, c)) |
@@ -76,6 +87,8 @@ named!(pub parse<DEC>,
 			b"-" => map!(SCS, |c| SelectCharset(1, c)) |
 			b"." => map!(SCS, |c| SelectCharset(2, c)) |
 			b"/" => map!(SCS, |c| SelectCharset(3, c)) |
+
+			b"c" => call!(RIS) |
 
 			b"6" => call!(DECBI)   |
 			b"7" => call!(DECSC)   |
@@ -118,6 +131,25 @@ named!(DECSWL<DEC>,
 
 named!(DECDWL<DEC>,
 	value!(DoubleWidth));
+
+named!(RIS<DEC>,
+	value!(ResetInitial));
+
+named!(S7C1T<DEC>,
+	value!(SevenBits));
+
+named!(S8C1T<DEC>,
+	value!(EightBits));
+
+named!(SCODFK<DEC>,
+	chain!(
+		key: take!(1) ~
+
+		delimiter: take!(1) ~
+		string:    take_until!(delimiter) ~
+		tag!(delimiter),
+
+		|| DefineFunctionKey(key[0], unsafe { str::from_utf8_unchecked(string) })));
 
 named!(SCS<Charset>,
 	switch!(take!(1),

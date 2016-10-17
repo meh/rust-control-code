@@ -22,7 +22,7 @@ use {Format, C0, C1, DEC, CSI, SGR};
 pub enum Control<'a> {
 	C0(C0::T),
 	C1(C1::T<'a>),
-	DEC(DEC::T),
+	DEC(DEC::T<'a>),
 	None(&'a str),
 }
 
@@ -38,8 +38,8 @@ impl<'a> From<C1::T<'a>> for Control<'a> {
 	}
 }
 
-impl<'a> From<DEC::T> for Control<'a> {
-	fn from(value: DEC::T) -> Control<'a> {
+impl<'a> From<DEC::T<'a>> for Control<'a> {
+	fn from(value: DEC::T<'a>) -> Control<'a> {
 		Control::DEC(value)
 	}
 }

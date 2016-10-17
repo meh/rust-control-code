@@ -29,7 +29,7 @@ macro_rules! arg {
 
 macro_rules! with_args {
 	($name:ident<$n:tt, $params:ident> -> $ty:ty, ? $body:expr) => (
-		fn $name($params: &[Option<u32>]) -> Option<$ty> {
+		fn $name<'a>($params: &[Option<u32>]) -> Option<$ty> {
 			if $params.len() <= $n {
 				$body.ok()
 			}
@@ -40,7 +40,7 @@ macro_rules! with_args {
 	);
 
 	($name:ident<$n:tt, $params:ident> -> $ty:ty, $body:expr) => (
-		fn $name($params: &[Option<u32>]) -> Option<$ty> {
+		fn $name<'a>($params: &[Option<u32>]) -> Option<$ty> {
 			if $params.len() <= $n {
 				Some($body)
 			}
@@ -51,19 +51,19 @@ macro_rules! with_args {
 	);
 
 	($name:ident<$params:ident> -> $ty:ty, ? $body:expr) => (
-		fn $name($params: &[Option<u32>]) -> Option<$ty> {
+		fn $name<'a>($params: &[Option<u32>]) -> Option<$ty> {
 			$body.ok()
 		}
 	);
 
 	($name:ident<$params:ident> -> $ty:ty, $body:expr) => (
-		fn $name($params: &[Option<u32>]) -> Option<$ty> {
+		fn $name<'a>($params: &[Option<u32>]) -> Option<$ty> {
 			Some($body)
 		}
 	);
 
 	($name:ident -> $ty:ty, $body:expr) => (
-		fn $name(args: &[Option<u32>]) -> Option<$ty> {
+		fn $name<'a>(args: &[Option<u32>]) -> Option<$ty> {
 			if args.is_empty() {
 				Some($body)
 			}

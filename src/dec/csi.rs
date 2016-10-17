@@ -15,62 +15,62 @@
 use DEC::T as DEC;
 use DEC::*;
 
-pub fn normal(id: u8, modifier: Option<u8>, args: &[Option<u32>]) -> Option<DEC> {
+pub fn normal<'a>(id: u8, modifier: Option<u8>, args: &[Option<u32>]) -> Option<DEC<'a>> {
 	match (id, modifier) {
-		(b's', None) => SCOSC(&args),
-		(b'u', None) => SCORC(&args),
-		(b'r', None) => DECSTBM(&args),
+		(b's', None) => SCOSC(args),
+		(b'u', None) => SCORC(args),
+		(b'r', None) => DECSTBM(args),
 
-		(b'q', Some(b' ')) => DECSCUSR(&args),
-		(b'p', Some(b'!')) => DECSTR(&args),
+		(b'q', Some(b' ')) => DECSCUSR(args),
+		(b'p', Some(b'!')) => DECSTR(args),
 
 		_ => None
 	}
 }
 
-pub fn private(id: u8, modifier: Option<u8>, args: &[Option<u32>]) -> Option<DEC> {
+pub fn private<'a>(id: u8, modifier: Option<u8>, args: &[Option<u32>]) -> Option<DEC<'a>> {
 	match (id, modifier) {
-		(b'h', None) => SM(&args),
-		(b'l', None) => RM(&args),
+		(b'h', None) => SM(args),
+		(b'l', None) => RM(args),
 
-		(b'~', Some(b'\'')) => DECDC(&args),
-		(b'}', Some(b'\'')) => DECIC(&args),
+		(b'~', Some(b'\'')) => DECDC(args),
+		(b'}', Some(b'\'')) => DECIC(args),
 
 		_ => None
 	}
 }
 
-with_args!(SCOSC -> DEC,
+with_args!(SCOSC -> DEC<'a>,
 	SaveCursorPosition);
 
-with_args!(SCORC -> DEC,
+with_args!(SCORC -> DEC<'a>,
 	RestoreCursorPosition);
 
-with_args!(SM<args> -> DEC, ?
+with_args!(SM<args> -> DEC<'a>, ?
 	args.iter().map(|d| d.unwrap_or(0))
 		.map(Mode::parse)
 		.collect::<Result<Vec<_>, _>>()
 		.map(Set));
 
-with_args!(RM<args> -> DEC, ?
+with_args!(RM<args> -> DEC<'a>, ?
 	args.iter().map(|d| d.unwrap_or(0))
 		.map(Mode::parse)
 		.collect::<Result<Vec<_>, _>>()
 		.map(Reset));
 
-with_args!(DECDC<1, args> -> DEC,
+with_args!(DECDC<1, args> -> DEC<'a>,
 	DeleteColumn(arg!(args[0] => 1)));
 
-with_args!(DECIC<1, args> -> DEC,
+with_args!(DECIC<1, args> -> DEC<'a>,
 	InsertColumn(arg!(args[0] => 1)));
 
-with_args!(DECSCUSR<1, args> -> DEC,
+with_args!(DECSCUSR<1, args> -> DEC<'a>,
 	CursorStyle(arg!(args[0] => 0) as u8));
 
-with_args!(DECSTBM<2, args> -> DEC,
+with_args!(DECSTBM<2, args> -> DEC<'a>,
 	ScrollRegion { top: arg!(args[0] => 1) - 1, bottom: arg!(args[1]).map(|b| b - 1) });
 
-with_args!(DECSTR -> DEC,
+with_args!(DECSTR -> DEC<'a>,
 	SoftReset);
 
 // TODO: DECCARA
@@ -137,3 +137,12 @@ with_args!(DECSTR -> DEC,
 // TODO: DECTSR
 // TODO: DECTST
 // TODO: DECXCPR
+// TODO: DSR-CPR
+// TODO: DSR-DIR
+// TODO: DSR-XCPR
+// TODO: DSR-KBD
+// TODO: DSR-MSR
+// TODO: DSR-DECCKSR
+// TODO: DSR-OS
+// TODO: DSR-PP
+// TODO: DSR-UDK
