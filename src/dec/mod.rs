@@ -475,6 +475,9 @@ mod test {
 			test!(b"\x1B[r" =>
 				DEC::ScrollRegion { top: 0, bottom: None });
 
+			test!(b"\x1B[0;0r" =>
+				DEC::ScrollRegion { top: 0, bottom: None });
+
 			test!(b"\x1B[21;23r" =>
 				DEC::ScrollRegion { top: 20, bottom: Some(22) });
 		}
