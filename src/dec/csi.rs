@@ -17,8 +17,6 @@ use DEC::*;
 
 pub fn normal<'a>(id: u8, modifier: Option<u8>, args: &[Option<u32>]) -> Option<DEC<'a>> {
 	match (id, modifier) {
-		(b's', None) => SCOSC(args),
-		(b'u', None) => SCORC(args),
 		(b'r', None) => DECSTBM(args),
 
 		(b'q', Some(b' ')) => DECSCUSR(args),
@@ -39,12 +37,6 @@ pub fn private<'a>(id: u8, modifier: Option<u8>, args: &[Option<u32>]) -> Option
 		_ => None
 	}
 }
-
-with_args!(SCOSC -> DEC<'a>,
-	SaveCursorPosition);
-
-with_args!(SCORC -> DEC<'a>,
-	RestoreCursorPosition);
 
 with_args!(SM<args> -> DEC<'a>, ?
 	args.iter().map(|d| d.unwrap_or(0))
