@@ -582,24 +582,6 @@ mod test {
 		}
 
 		#[test]
-		fn pu1() {
-			test!(b"\x91" =>
-				C1::PrivateUseOne);
-
-			test!(b"\x1B\x51" =>
-				C1::PrivateUseOne);
-		}
-
-		#[test]
-		fn pu2() {
-			test!(b"\x92" =>
-				C1::PrivateUseTwo);
-
-			test!(b"\x1B\x52" =>
-				C1::PrivateUseTwo);
-		}
-
-		#[test]
 		fn sts() {
 			test!(b"\x93" =>
 				C1::SetTransmitState);
@@ -794,16 +776,6 @@ mod test {
 		#[test]
 		fn dcs() {
 			test!(C1::DeviceControlString("foo"));
-		}
-
-		#[test]
-		fn pu1() {
-			test!(C1::PrivateUseOne);
-		}
-
-		#[test]
-		fn pu2() {
-			test!(C1::PrivateUseTwo);
 		}
 
 		#[test]
