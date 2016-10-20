@@ -82,7 +82,7 @@ pub enum CSI {
 	SpaceWidth(u32),
 	ScrollUp(u32),
 	TabulationClear(Tabulation),
-	LinePosition(u32),
+	CursorVerticalPosition(u32),
 
 	Unknown(u8, Option<u8>, Vec<Option<u32>>),
 	Private(u8, Option<u8>, Vec<Option<u32>>),
@@ -353,8 +353,8 @@ impl Format for CSI {
 			TabulationClear(value) =>
 				write!("g", [value]),
 
-			LinePosition(n) =>
-				write!("d", [n]),
+			CursorVerticalPosition(n) =>
+				write!("d", [n + 1]),
 
 			Unknown(id, modifier, ref args) => {
 				write!(entry false);
@@ -758,7 +758,7 @@ with_args!(TBC<1, args> -> CSI, ?
 	Tabulation::parse(arg!(args[0] => 0)).map(TabulationClear));
 
 with_args!(VPA<1, args> -> CSI,
-	LinePosition(arg!(args[0] => 1)));
+	CursorVerticalPosition(arg!(args[0] => 1) - 1));
 
 with_args!(VPB<1, args> -> CSI,
 	CursorUp(arg!(args[0] => 1)));
@@ -1683,10 +1683,10 @@ mod test {
 		#[test]
 		fn vpa() {
 			test!(b"\x1B[d" =>
-				CSI::LinePosition(1));
+				CSI::CursorVerticalPosition(0));
 
 			test!(b"\x1B[42d" =>
-				CSI::LinePosition(42));
+				CSI::CursorVerticalPosition(41));
 		}
 
 		#[test]
@@ -2203,7 +2203,7 @@ mod test {
 
 		#[test]
 		fn vpa() {
-			test!(CSI::LinePosition(1));
+			test!(CSI::CursorVerticalPosition(1));
 			test!(CSI::CursorDown(42));
 		}
 
