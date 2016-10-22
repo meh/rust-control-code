@@ -18,11 +18,10 @@ use nom;
 pub enum Tabulation {
 	Character,
 	Line,
-	ClearCharacter,
-	ClearLine,
-	ClearLineAllCharacters,
-	ClearAllCharacters,
-	ClearAllLines,
+	Characters,
+	AllCharacters,
+	AllLines,
+	All,
 }
 
 impl Tabulation {
@@ -30,11 +29,10 @@ impl Tabulation {
 		match value {
 			0 => Ok(Tabulation::Character),
 			1 => Ok(Tabulation::Line),
-			2 => Ok(Tabulation::ClearCharacter),
-			3 => Ok(Tabulation::ClearLine),
-			4 => Ok(Tabulation::ClearLineAllCharacters),
-			5 => Ok(Tabulation::ClearAllCharacters),
-			6 => Ok(Tabulation::ClearAllLines),
+			2 => Ok(Tabulation::Characters),
+			3 => Ok(Tabulation::AllCharacters),
+			4 => Ok(Tabulation::AllLines),
+			5 => Ok(Tabulation::All),
 			_ => Err(nom::Err::Code(nom::ErrorKind::Custom(9003))),
 		}
 	}
@@ -43,13 +41,12 @@ impl Tabulation {
 impl Into<u32> for Tabulation {
 	fn into(self) -> u32 {
 		match self {
-			Tabulation::Character              => 0,
-			Tabulation::Line                   => 1,
-			Tabulation::ClearCharacter         => 2,
-			Tabulation::ClearLine              => 3,
-			Tabulation::ClearLineAllCharacters => 4,
-			Tabulation::ClearAllCharacters     => 5,
-			Tabulation::ClearAllLines          => 6,
+			Tabulation::Character     => 0,
+			Tabulation::Line          => 1,
+			Tabulation::Characters    => 2,
+			Tabulation::AllCharacters => 3,
+			Tabulation::AllLines      => 4,
+			Tabulation::All           => 5,
 		}
 	}
 }

@@ -27,7 +27,7 @@ pub enum CSI {
 	CursorNextLine(u32),
 	CursorPreviousLine(u32),
 	CursorPositionReport { x: u32, y: u32 },
-	CursorTabulationControl(Tabulation),
+	CursorTabulationControl(TabulationControl),
 	CursorBack(u32),
 	CursorDown(u32),
 	CursorForward(u32),
@@ -374,6 +374,9 @@ impl Format for CSI {
 mod erase;
 pub use self::erase::Erase;
 
+mod tabulation_control;
+pub use self::tabulation_control::TabulationControl;
+
 mod tabulation;
 pub use self::tabulation::Tabulation;
 
@@ -552,7 +555,7 @@ with_args!(CPR<2, args> -> CSI,
 	CursorPositionReport { y: arg!(args[0] => 1) - 1, x: arg!(args[1] => 1) - 1 });
 
 with_args!(CTC<1, args> -> CSI, ?
-	Tabulation::parse(arg!(args[0] => 0)).map(CursorTabulationControl));
+	TabulationControl::parse(arg!(args[0] => 0)).map(CursorTabulationControl));
 
 with_args!(CUB<1, args> -> CSI,
 	CursorBack(arg!(args[0] => 1)));
@@ -770,7 +773,7 @@ pub mod shim {
 	pub use super::CSI as T;
 	pub use super::CSI::*;
 	pub use super::parse;
-	pub use super::{Erase, Tabulation, Qualification, Combination, Copy};
+	pub use super::{Erase, TabulationControl, Tabulation, Qualification, Combination, Copy};
 	pub use super::{Expansion, Parallel, Disposition, Mode, Direction, Unit};
 }
 
@@ -849,28 +852,28 @@ mod test {
 		#[test]
 		fn ctc() {
 			test!(b"\x1B[W" =>
-				CSI::CursorTabulationControl(CSI::Tabulation::Character));
+				CSI::CursorTabulationControl(CSI::TabulationControl::Character));
 
 			test!(b"\x1B[0W" =>
-				CSI::CursorTabulationControl(CSI::Tabulation::Character));
+				CSI::CursorTabulationControl(CSI::TabulationControl::Character));
 
 			test!(b"\x1B[1W" =>
-				CSI::CursorTabulationControl(CSI::Tabulation::Line));
+				CSI::CursorTabulationControl(CSI::TabulationControl::Line));
 
 			test!(b"\x1B[2W" =>
-				CSI::CursorTabulationControl(CSI::Tabulation::ClearCharacter));
+				CSI::CursorTabulationControl(CSI::TabulationControl::ClearCharacter));
 
 			test!(b"\x1B[3W" =>
-				CSI::CursorTabulationControl(CSI::Tabulation::ClearLine));
+				CSI::CursorTabulationControl(CSI::TabulationControl::ClearLine));
 
 			test!(b"\x1B[4W" =>
-				CSI::CursorTabulationControl(CSI::Tabulation::ClearLineAllCharacters));
+				CSI::CursorTabulationControl(CSI::TabulationControl::ClearCharacters));
 
 			test!(b"\x1B[5W" =>
-				CSI::CursorTabulationControl(CSI::Tabulation::ClearAllCharacters));
+				CSI::CursorTabulationControl(CSI::TabulationControl::ClearAllCharacters));
 
 			test!(b"\x1B[6W" =>
-				CSI::CursorTabulationControl(CSI::Tabulation::ClearAllLines));
+				CSI::CursorTabulationControl(CSI::TabulationControl::ClearAllLines));
 		}
 
 		#[test]
@@ -1665,19 +1668,16 @@ mod test {
 				CSI::TabulationClear(CSI::Tabulation::Line));
 
 			test!(b"\x1B[2g" =>
-				CSI::TabulationClear(CSI::Tabulation::ClearCharacter));
+				CSI::TabulationClear(CSI::Tabulation::Characters));
 
 			test!(b"\x1B[3g" =>
-				CSI::TabulationClear(CSI::Tabulation::ClearLine));
+				CSI::TabulationClear(CSI::Tabulation::AllCharacters));
 
 			test!(b"\x1B[4g" =>
-				CSI::TabulationClear(CSI::Tabulation::ClearLineAllCharacters));
+				CSI::TabulationClear(CSI::Tabulation::AllLines));
 
 			test!(b"\x1B[5g" =>
-				CSI::TabulationClear(CSI::Tabulation::ClearAllCharacters));
-
-			test!(b"\x1B[6g" =>
-				CSI::TabulationClear(CSI::Tabulation::ClearAllLines));
+				CSI::TabulationClear(CSI::Tabulation::All));
 		}
 
 		#[test]
@@ -1775,13 +1775,13 @@ mod test {
 
 		#[test]
 		fn ctc() {
-			test!(CSI::CursorTabulationControl(CSI::Tabulation::Character));
-			test!(CSI::CursorTabulationControl(CSI::Tabulation::Line));
-			test!(CSI::CursorTabulationControl(CSI::Tabulation::ClearCharacter));
-			test!(CSI::CursorTabulationControl(CSI::Tabulation::ClearLine));
-			test!(CSI::CursorTabulationControl(CSI::Tabulation::ClearLineAllCharacters));
-			test!(CSI::CursorTabulationControl(CSI::Tabulation::ClearAllCharacters));
-			test!(CSI::CursorTabulationControl(CSI::Tabulation::ClearAllLines));
+			test!(CSI::CursorTabulationControl(CSI::TabulationControl::Character));
+			test!(CSI::CursorTabulationControl(CSI::TabulationControl::Line));
+			test!(CSI::CursorTabulationControl(CSI::TabulationControl::ClearCharacter));
+			test!(CSI::CursorTabulationControl(CSI::TabulationControl::ClearLine));
+			test!(CSI::CursorTabulationControl(CSI::TabulationControl::ClearCharacters));
+			test!(CSI::CursorTabulationControl(CSI::TabulationControl::ClearAllCharacters));
+			test!(CSI::CursorTabulationControl(CSI::TabulationControl::ClearAllLines));
 		}
 
 		#[test]
@@ -2194,11 +2194,10 @@ mod test {
 		fn tbc() {
 			test!(CSI::TabulationClear(CSI::Tabulation::Character));
 			test!(CSI::TabulationClear(CSI::Tabulation::Line));
-			test!(CSI::TabulationClear(CSI::Tabulation::ClearCharacter));
-			test!(CSI::TabulationClear(CSI::Tabulation::ClearLine));
-			test!(CSI::TabulationClear(CSI::Tabulation::ClearLineAllCharacters));
-			test!(CSI::TabulationClear(CSI::Tabulation::ClearAllCharacters));
-			test!(CSI::TabulationClear(CSI::Tabulation::ClearAllLines));
+			test!(CSI::TabulationClear(CSI::Tabulation::Characters));
+			test!(CSI::TabulationClear(CSI::Tabulation::AllCharacters));
+			test!(CSI::TabulationClear(CSI::Tabulation::AllLines));
+			test!(CSI::TabulationClear(CSI::Tabulation::All));
 		}
 
 		#[test]
