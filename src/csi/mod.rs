@@ -38,7 +38,7 @@ pub enum CSI {
 	DefineAreaQualification(Qualification),
 	DeleteCharacter(u32),
 	DeleteLine(u32),
-	DeviceStatusReport,
+	DeviceStatusReport(Report),
 	DimensionTextArea(u32, u32),
 	EraseArea(Erase),
 	EraseCharacter(u32),
@@ -208,8 +208,8 @@ impl Format for CSI {
 			DeleteLine(n) =>
 				write!("M", [n]),
 
-			DeviceStatusReport =>
-				write!("n", [6u32]),
+			DeviceStatusReport(value) =>
+				write!("n", [value]),
 
 			DimensionTextArea(w, h) =>
 				write!(" T", [w, h]),
@@ -407,6 +407,9 @@ pub use self::direction::Direction;
 mod unit;
 pub use self::unit::Unit;
 
+mod report;
+pub use self::report::Report;
+
 const DIGIT:    &'static [u8] = b"0123456789\x08\x09\x0A\x0B\x0D";
 const LETTER:   &'static [u8] = b"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
 const MODIFIER: &'static [u8] = b" !\"#$%&'()*+,-./";
@@ -588,13 +591,7 @@ with_args!(DL<1, args> -> CSI,
 	DeleteLine(arg!(args[0] => 1)));
 
 with_args!(DSR<1, args> -> CSI, ?
-	match arg!(args[0] => 0) {
-		6 =>
-			Ok(DeviceStatusReport),
-
-		_ =>
-			Err(nom::Err::Code::<&[u8], u32>(ErrorKind::Custom(9004)))
-	});
+	Report::parse(arg!(args[0] => 0)).map(DeviceStatusReport));
 
 with_args!(DTA<2, args> -> CSI,
 	DimensionTextArea(arg!(args[0] => 0), arg!(args[1] => 0)));
@@ -774,7 +771,7 @@ pub mod shim {
 	pub use super::CSI::*;
 	pub use super::parse;
 	pub use super::{Erase, TabulationControl, Tabulation, Qualification, Combination, Copy};
-	pub use super::{Expansion, Parallel, Disposition, Mode, Direction, Unit};
+	pub use super::{Expansion, Parallel, Disposition, Mode, Direction, Unit, Report};
 }
 
 #[cfg(test)]
@@ -1011,7 +1008,7 @@ mod test {
 		#[test]
 		fn dsr() {
 			test!(b"\x1B[6n" =>
-				CSI::DeviceStatusReport);
+				CSI::DeviceStatusReport(CSI::Report::CursorPosition));
 		}
 
 		#[test]
@@ -1858,7 +1855,7 @@ mod test {
 
 		#[test]
 		fn dsr() {
-			test!(CSI::DeviceStatusReport);
+			test!(CSI::DeviceStatusReport(CSI::Report::CursorPosition));
 		}
 
 		#[test]
