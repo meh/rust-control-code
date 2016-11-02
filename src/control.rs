@@ -23,7 +23,6 @@ pub enum Control<'a> {
 	C0(C0::T),
 	C1(C1::T<'a>),
 	DEC(DEC::T<'a>),
-	None(&'a str),
 }
 
 impl<'a> From<C0::T> for Control<'a> {
@@ -65,9 +64,6 @@ impl<'a> From<Vec<SGR::T>> for Control<'a> {
 impl<'a> Format for Control<'a> {
 	fn fmt<W: Write>(&self, mut f: W, wide: bool) -> io::Result<()> {
 		match self {
-			&Control::None(ref value) =>
-				f.write_all(value.as_bytes()),
-
 			&Control::C0(ref value) =>
 				value.fmt(f, wide),
 
@@ -81,59 +77,6 @@ impl<'a> Format for Control<'a> {
 }
 
 named!(pub parse<Control>,
-	alt!(control | string));
-
-fn string(i: &[u8]) -> IResult<&[u8], Control> {
-	const WIDTH: [u8; 256] = [
-		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 0x1F
-		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 0x3F
-		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 0x5F
-		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 0x7F
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x9F
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xBF
-		0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-		2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, // 0xDF
-		3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // 0xEF
-		4, 4, 4, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xFF
-	];
-
-	let mut length = WIDTH[i[0] as usize] as usize;
-
-	if i.len() < length {
-		return IResult::Incomplete(Needed::Size(length - i.len()));
-	}
-
-	let mut rest = &i[length..];
-
-	while !rest.is_empty() && control(rest).is_err() {
-		let w = WIDTH[rest[0] as usize] as usize;
-
-		if w == 0 {
-			return IResult::Error(nom::Err::Code(nom::ErrorKind::Custom(9001)));
-		}
-		else if rest.len() < w {
-			return IResult::Incomplete(Needed::Size(w - rest.len()));
-		}
-
-		length += w;
-		rest    = &rest[w..];
-	}
-
-	if let Ok(string) = str::from_utf8(&i[..length]) {
-		IResult::Done(&i[length..], Control::None(string))
-	}
-	else {
-		IResult::Error(nom::Err::Code(nom::ErrorKind::Custom(9001)))
-	}
-}
-
-named!(control<Control>,
 	alt!(
 		map!(DEC::parse, |c| Control::DEC(c))
 		|
