@@ -1,6 +1,6 @@
 [package]
 name    = "control-code"
-version = "0.3.4"
+version = "0.3.5"
 
 authors = ["meh. <meh@schizofreni.co>"]
 license = "WTFPL"
