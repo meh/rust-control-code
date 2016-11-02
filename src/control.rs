@@ -114,7 +114,10 @@ fn string(i: &[u8]) -> IResult<&[u8], Control> {
 	while !rest.is_empty() && control(rest).is_err() {
 		let w = WIDTH[rest[0] as usize] as usize;
 
-		if rest.len() < w {
+		if w == 0 {
+			return IResult::Error(nom::Err::Code(nom::ErrorKind::Custom(9001)));
+		}
+		else if rest.len() < w {
 			return IResult::Incomplete(Needed::Size(w - rest.len()));
 		}
 
