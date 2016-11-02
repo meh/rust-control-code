@@ -12,9 +12,7 @@
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
-use std::str;
 use std::io::{self, Write};
-use nom::{self, IResult, Needed};
 
 use {Format, C0, C1, DEC, CSI, SGR};
 
@@ -62,7 +60,7 @@ impl<'a> From<Vec<SGR::T>> for Control<'a> {
 }
 
 impl<'a> Format for Control<'a> {
-	fn fmt<W: Write>(&self, mut f: W, wide: bool) -> io::Result<()> {
+	fn fmt<W: Write>(&self, f: W, wide: bool) -> io::Result<()> {
 		match self {
 			&Control::C0(ref value) =>
 				value.fmt(f, wide),
