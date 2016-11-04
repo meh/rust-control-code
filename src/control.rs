@@ -14,6 +14,7 @@
 
 use std::io::{self, Write};
 use smallvec::SmallVec;
+use nom::{self, IResult, Needed};
 
 use {Format, C0, C1, DEC, CSI, SGR};
 
@@ -75,7 +76,39 @@ impl<'a> Format for Control<'a> {
 	}
 }
 
-named!(pub parse<Control>,
+/// Parse a control code.
+pub fn parse(i: &[u8]) -> IResult<&[u8], Control> {
+	const TABLE: [u8; 256] = [
+		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	];
+
+	if i.is_empty() {
+		return IResult::Incomplete(Needed::Unknown);
+	}
+
+	if TABLE[i[0] as usize] == 0 {
+		return IResult::Error(nom::Err::Code(nom::ErrorKind::Custom(0)));
+	}
+
+	control(i)
+}
+
+named!(control<Control>,
 	alt!(
 		map!(DEC::parse, |c| Control::DEC(c))
 		|
