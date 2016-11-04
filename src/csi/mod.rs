@@ -14,10 +14,14 @@
 
 use std::str;
 use std::u32;
-use nom::{self, ErrorKind};
-
 use std::io::{self, Write};
+use std::iter::FromIterator;
+use nom::{self, IResult, ErrorKind};
+use smallvec::SmallVec;
+
 use Format;
+
+pub const SIZE: usize = 16;
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub enum CSI {
@@ -53,7 +57,7 @@ pub enum CSI {
 	IdentifyDeviceControlString(Option<u32>),
 	IdentifyGraphicSubrepertoire(Option<u32>),
 	InsertLine(u32),
-	Justify(Vec<Option<u32>>),
+	Justify(SmallVec<[Option<u32>; SIZE]>),
 	MediaCopy(Copy),
 	NextPage(u32),
 	Presentation(Expansion),
@@ -63,19 +67,19 @@ pub enum CSI {
 	PageBack(u32),
 	PageForward(u32),
 	ParallelText(Parallel),
-	GraphicDisposition(Vec<Disposition>),
+	GraphicDisposition(SmallVec<[Disposition; SIZE]>),
 	RestoreCursor,
 	Repeat(u32),
-	Reset(Vec<Mode>),
+	Reset(SmallVec<[Mode; SIZE]>),
 	CharacterOrientation(u16),
 	SaveCursor,
 	CharacterSpacing(u32),
 	ScrollDown(u32),
 	Movement(Direction),
-	SelectGraphicalRendition(Vec<::SGR::T>),
+	SelectGraphicalRendition(SmallVec<[::SGR::T; SIZE]>),
 	ScrollLeft(u32),
 	LineSpacing(u32),
-	Set(Vec<Mode>),
+	Set(SmallVec<[Mode; SIZE]>),
 	ScrollRight(u32),
 	ReverseString(bool),
 	SizeUnit(Unit),
@@ -84,8 +88,8 @@ pub enum CSI {
 	TabulationClear(Tabulation),
 	CursorVerticalPosition(u32),
 
-	Unknown(u8, Option<u8>, Vec<Option<u32>>),
-	Private(u8, Option<u8>, Vec<Option<u32>>),
+	Unknown(u8, Option<u8>, SmallVec<[Option<u32>; SIZE]>),
+	Private(u8, Option<u8>, SmallVec<[Option<u32>; SIZE]>),
 }
 
 use self::CSI::*;
@@ -321,7 +325,7 @@ impl Format for CSI {
 				write!("^", [direction]),
 
 			SelectGraphicalRendition(ref attrs) =>
-				write!("m", attrs.iter().flat_map(|&a| Into::<Vec<u32>>::into(a)).map(Some)),
+				write!("m", attrs.iter().flat_map(|&a| Into::<SmallVec<_>>::into(a)).map(Some)),
 
 			ScrollLeft(n) =>
 				write!(" @", [n]),
@@ -435,8 +439,28 @@ named!(normal<CSI>,
 
 		|| res));
 
-named!(parameters<Vec<Option<u32>>>,
-	many0!(parameter));
+fn parameters(mut i: &[u8]) -> IResult<&[u8], SmallVec<[Option<u32>; SIZE]>> {
+	let mut result = SmallVec::new();
+
+	loop {
+		match parameter(i) {
+			IResult::Done(rest, item) => {
+				i = rest;
+				result.push(item);
+			}
+
+			IResult::Incomplete(how) => {
+				return IResult::Incomplete(how);
+			}
+
+			IResult::Error(_) => {
+				break;
+			}
+		}
+	}
+
+	IResult::Done(i, result)
+}
 
 named!(parameter<Option<u32> >,
 	alt!(
@@ -461,7 +485,7 @@ fn number(i: &[u8]) -> u32 {
 	n
 }
 
-fn standard(id: char, modifier: Option<char>, args: Vec<Option<u32>>) -> Option<CSI> {
+fn standard(id: char, modifier: Option<char>, args: SmallVec<[Option<u32>; SIZE]>) -> Option<CSI> {
 	match (id, modifier) {
 		('m', None) => SGR(&args),
 		('H', None) => CUP(&args),
@@ -648,7 +672,7 @@ with_args!(IL<1, args> -> CSI,
 	InsertLine(arg!(args[0] => 1)));
 
 with_args!(JFY<args> -> CSI,
-	Justify(args.to_vec()));
+	Justify(SmallVec::from_iter(args.iter().cloned())));
 
 with_args!(MC<1, args> -> CSI, ?
 	Copy::parse(arg!(args[0] => 0)).map(MediaCopy));
@@ -680,7 +704,7 @@ with_args!(PTX<1, args> -> CSI, ?
 with_args!(QUAD<args> -> CSI, ?
 	args.iter().map(|d| d.unwrap_or(0))
 		.map(Disposition::parse)
-		.collect::<Result<Vec<_>, _>>()
+		.collect::<Result<SmallVec<_>, _>>()
 		.map(GraphicDisposition));
 
 with_args!(RCP -> CSI,
@@ -692,7 +716,7 @@ with_args!(REP<1, args> -> CSI,
 with_args!(RM<args> -> CSI, ?
 	args.iter().map(|d| d.unwrap_or(0))
 		.map(Mode::parse)
-		.collect::<Result<Vec<_>, _>>()
+		.collect::<Result<SmallVec<_>, _>>()
 		.map(Reset));
 
 with_args!(SCO<1, args> -> CSI, ?
@@ -732,7 +756,7 @@ with_args!(SLS<1, args> -> CSI,
 with_args!(SM<args> -> CSI, ?
 	args.iter().map(|d| d.unwrap_or(0))
 		.map(Mode::parse)
-		.collect::<Result<Vec<_>, _>>()
+		.collect::<Result<SmallVec<_>, _>>()
 		.map(Set));
 
 with_args!(SR<1, args> -> CSI,
@@ -769,7 +793,7 @@ with_args!(VPR<1, args> -> CSI,
 pub mod shim {
 	pub use super::CSI as T;
 	pub use super::CSI::*;
-	pub use super::parse;
+	pub use super::{parse, SIZE};
 	pub use super::{Erase, TabulationControl, Tabulation, Qualification, Combination, Copy};
 	pub use super::{Expansion, Parallel, Disposition, Mode, Direction, Unit, Report};
 }
@@ -1230,7 +1254,7 @@ mod test {
 		#[test]
 		fn jfy() {
 			test!(b"\x1B[1;2 F" =>
-				CSI::Justify(vec![Some(1), Some(2)]));
+				CSI::Justify(small_vec![Some(1), Some(2)]));
 		}
 
 		#[test]
@@ -1374,64 +1398,64 @@ mod test {
 		#[test]
 		fn rm() {
 			test!(b"\x1B[1l" =>
-				CSI::Reset(vec![CSI::Mode::GuardedAreaTransfer]));
+				CSI::Reset(small_vec![CSI::Mode::GuardedAreaTransfer]));
 
 			test!(b"\x1B[2l" =>
-				CSI::Reset(vec![CSI::Mode::KeyboardLock]));
+				CSI::Reset(small_vec![CSI::Mode::KeyboardLock]));
 
 			test!(b"\x1B[3l" =>
-				CSI::Reset(vec![CSI::Mode::ControlRepresentation]));
+				CSI::Reset(small_vec![CSI::Mode::ControlRepresentation]));
 
 			test!(b"\x1B[4l" =>
-				CSI::Reset(vec![CSI::Mode::InsertionReplacement]));
+				CSI::Reset(small_vec![CSI::Mode::InsertionReplacement]));
 
 			test!(b"\x1B[5l" =>
-				CSI::Reset(vec![CSI::Mode::StatusReportTransfer]));
+				CSI::Reset(small_vec![CSI::Mode::StatusReportTransfer]));
 
 			test!(b"\x1B[6l" =>
-				CSI::Reset(vec![CSI::Mode::Erasure]));
+				CSI::Reset(small_vec![CSI::Mode::Erasure]));
 
 			test!(b"\x1B[7l" =>
-				CSI::Reset(vec![CSI::Mode::LineEditing]));
+				CSI::Reset(small_vec![CSI::Mode::LineEditing]));
 
 			test!(b"\x1B[8l" =>
-				CSI::Reset(vec![CSI::Mode::BidirectionalSupport]));
+				CSI::Reset(small_vec![CSI::Mode::BidirectionalSupport]));
 
 			test!(b"\x1B[9l" =>
-				CSI::Reset(vec![CSI::Mode::DeviceComponentSelect]));
+				CSI::Reset(small_vec![CSI::Mode::DeviceComponentSelect]));
 
 			test!(b"\x1B[10l" =>
-				CSI::Reset(vec![CSI::Mode::CharacterEditing]));
+				CSI::Reset(small_vec![CSI::Mode::CharacterEditing]));
 
 			test!(b"\x1B[11l" =>
-				CSI::Reset(vec![CSI::Mode::PositioningUnit]));
+				CSI::Reset(small_vec![CSI::Mode::PositioningUnit]));
 
 			test!(b"\x1B[12l" =>
-				CSI::Reset(vec![CSI::Mode::SendReceive]));
+				CSI::Reset(small_vec![CSI::Mode::SendReceive]));
 
 			test!(b"\x1B[13l" =>
-				CSI::Reset(vec![CSI::Mode::FormatEffectorAction]));
+				CSI::Reset(small_vec![CSI::Mode::FormatEffectorAction]));
 
 			test!(b"\x1B[14l" =>
-				CSI::Reset(vec![CSI::Mode::FormatEffectorTransfer]));
+				CSI::Reset(small_vec![CSI::Mode::FormatEffectorTransfer]));
 
 			test!(b"\x1B[15l" =>
-				CSI::Reset(vec![CSI::Mode::MultipleAreaTransfer]));
+				CSI::Reset(small_vec![CSI::Mode::MultipleAreaTransfer]));
 
 			test!(b"\x1B[16l" =>
-				CSI::Reset(vec![CSI::Mode::TransferTermination]));
+				CSI::Reset(small_vec![CSI::Mode::TransferTermination]));
 
 			test!(b"\x1B[17l" =>
-				CSI::Reset(vec![CSI::Mode::SelectedAreaTransfer]));
+				CSI::Reset(small_vec![CSI::Mode::SelectedAreaTransfer]));
 
 			test!(b"\x1B[18l" =>
-				CSI::Reset(vec![CSI::Mode::TabulationStop]));
+				CSI::Reset(small_vec![CSI::Mode::TabulationStop]));
 
 			test!(b"\x1B[21l" =>
-				CSI::Reset(vec![CSI::Mode::GraphicRenditionCombination]));
+				CSI::Reset(small_vec![CSI::Mode::GraphicRenditionCombination]));
 
 			test!(b"\x1B[22l" =>
-				CSI::Reset(vec![CSI::Mode::ZeroDefault]));
+				CSI::Reset(small_vec![CSI::Mode::ZeroDefault]));
 		}
 
 		#[test]
@@ -1521,64 +1545,64 @@ mod test {
 		#[test]
 		fn sm() {
 			test!(b"\x1B[1h" =>
-				CSI::Set(vec![CSI::Mode::GuardedAreaTransfer]));
+				CSI::Set(small_vec![CSI::Mode::GuardedAreaTransfer]));
 
 			test!(b"\x1B[2h" =>
-				CSI::Set(vec![CSI::Mode::KeyboardLock]));
+				CSI::Set(small_vec![CSI::Mode::KeyboardLock]));
 
 			test!(b"\x1B[3h" =>
-				CSI::Set(vec![CSI::Mode::ControlRepresentation]));
+				CSI::Set(small_vec![CSI::Mode::ControlRepresentation]));
 
 			test!(b"\x1B[4h" =>
-				CSI::Set(vec![CSI::Mode::InsertionReplacement]));
+				CSI::Set(small_vec![CSI::Mode::InsertionReplacement]));
 
 			test!(b"\x1B[5h" =>
-				CSI::Set(vec![CSI::Mode::StatusReportTransfer]));
+				CSI::Set(small_vec![CSI::Mode::StatusReportTransfer]));
 
 			test!(b"\x1B[6h" =>
-				CSI::Set(vec![CSI::Mode::Erasure]));
+				CSI::Set(small_vec![CSI::Mode::Erasure]));
 
 			test!(b"\x1B[7h" =>
-				CSI::Set(vec![CSI::Mode::LineEditing]));
+				CSI::Set(small_vec![CSI::Mode::LineEditing]));
 
 			test!(b"\x1B[8h" =>
-				CSI::Set(vec![CSI::Mode::BidirectionalSupport]));
+				CSI::Set(small_vec![CSI::Mode::BidirectionalSupport]));
 
 			test!(b"\x1B[9h" =>
-				CSI::Set(vec![CSI::Mode::DeviceComponentSelect]));
+				CSI::Set(small_vec![CSI::Mode::DeviceComponentSelect]));
 
 			test!(b"\x1B[10h" =>
-				CSI::Set(vec![CSI::Mode::CharacterEditing]));
+				CSI::Set(small_vec![CSI::Mode::CharacterEditing]));
 
 			test!(b"\x1B[11h" =>
-				CSI::Set(vec![CSI::Mode::PositioningUnit]));
+				CSI::Set(small_vec![CSI::Mode::PositioningUnit]));
 
 			test!(b"\x1B[12h" =>
-				CSI::Set(vec![CSI::Mode::SendReceive]));
+				CSI::Set(small_vec![CSI::Mode::SendReceive]));
 
 			test!(b"\x1B[13h" =>
-				CSI::Set(vec![CSI::Mode::FormatEffectorAction]));
+				CSI::Set(small_vec![CSI::Mode::FormatEffectorAction]));
 
 			test!(b"\x1B[14h" =>
-				CSI::Set(vec![CSI::Mode::FormatEffectorTransfer]));
+				CSI::Set(small_vec![CSI::Mode::FormatEffectorTransfer]));
 
 			test!(b"\x1B[15h" =>
-				CSI::Set(vec![CSI::Mode::MultipleAreaTransfer]));
+				CSI::Set(small_vec![CSI::Mode::MultipleAreaTransfer]));
 
 			test!(b"\x1B[16h" =>
-				CSI::Set(vec![CSI::Mode::TransferTermination]));
+				CSI::Set(small_vec![CSI::Mode::TransferTermination]));
 
 			test!(b"\x1B[17h" =>
-				CSI::Set(vec![CSI::Mode::SelectedAreaTransfer]));
+				CSI::Set(small_vec![CSI::Mode::SelectedAreaTransfer]));
 
 			test!(b"\x1B[18h" =>
-				CSI::Set(vec![CSI::Mode::TabulationStop]));
+				CSI::Set(small_vec![CSI::Mode::TabulationStop]));
 
 			test!(b"\x1B[21h" =>
-				CSI::Set(vec![CSI::Mode::GraphicRenditionCombination]));
+				CSI::Set(small_vec![CSI::Mode::GraphicRenditionCombination]));
 
 			test!(b"\x1B[22h" =>
-				CSI::Set(vec![CSI::Mode::ZeroDefault]));
+				CSI::Set(small_vec![CSI::Mode::ZeroDefault]));
 		}
 
 		#[test]
@@ -1721,15 +1745,15 @@ mod test {
 		fn parameters() {
 			assert_eq!(&b"\x9B1;~"[..],
 				&*format(&Control::C1(C1::ControlSequence(
-					CSI::Unknown(b'~', None, vec![Some(1), None]))), false));
+					CSI::Unknown(b'~', None, small_vec![Some(1), None]))), false));
 
 			assert_eq!(&b"\x9B;1~"[..],
 				&*format(&Control::C1(C1::ControlSequence(
-					CSI::Unknown(b'~', None, vec![None, Some(1)]))), false));
+					CSI::Unknown(b'~', None, small_vec![None, Some(1)]))), false));
 
 			assert_eq!(&b"\x9B1;1~"[..],
 				&*format(&Control::C1(C1::ControlSequence(
-					CSI::Unknown(b'~', None, vec![Some(1), Some(1)]))), false));
+					CSI::Unknown(b'~', None, small_vec![Some(1), Some(1)]))), false));
 		}
 
 		#[test]
@@ -1975,7 +1999,7 @@ mod test {
 
 		#[test]
 		fn jfy() {
-			test!(CSI::Justify(vec![Some(1), Some(2)]));
+			test!(CSI::Justify(small_vec![Some(1), Some(2)]));
 		}
 
 		#[test]
@@ -2056,26 +2080,26 @@ mod test {
 
 		#[test]
 		fn rm() {
-			test!(CSI::Reset(vec![CSI::Mode::GuardedAreaTransfer]));
-			test!(CSI::Reset(vec![CSI::Mode::KeyboardLock]));
-			test!(CSI::Reset(vec![CSI::Mode::ControlRepresentation]));
-			test!(CSI::Reset(vec![CSI::Mode::InsertionReplacement]));
-			test!(CSI::Reset(vec![CSI::Mode::StatusReportTransfer]));
-			test!(CSI::Reset(vec![CSI::Mode::Erasure]));
-			test!(CSI::Reset(vec![CSI::Mode::LineEditing]));
-			test!(CSI::Reset(vec![CSI::Mode::BidirectionalSupport]));
-			test!(CSI::Reset(vec![CSI::Mode::DeviceComponentSelect]));
-			test!(CSI::Reset(vec![CSI::Mode::CharacterEditing]));
-			test!(CSI::Reset(vec![CSI::Mode::PositioningUnit]));
-			test!(CSI::Reset(vec![CSI::Mode::SendReceive]));
-			test!(CSI::Reset(vec![CSI::Mode::FormatEffectorAction]));
-			test!(CSI::Reset(vec![CSI::Mode::FormatEffectorTransfer]));
-			test!(CSI::Reset(vec![CSI::Mode::MultipleAreaTransfer]));
-			test!(CSI::Reset(vec![CSI::Mode::TransferTermination]));
-			test!(CSI::Reset(vec![CSI::Mode::SelectedAreaTransfer]));
-			test!(CSI::Reset(vec![CSI::Mode::TabulationStop]));
-			test!(CSI::Reset(vec![CSI::Mode::GraphicRenditionCombination]));
-			test!(CSI::Reset(vec![CSI::Mode::ZeroDefault]));
+			test!(CSI::Reset(small_vec![CSI::Mode::GuardedAreaTransfer]));
+			test!(CSI::Reset(small_vec![CSI::Mode::KeyboardLock]));
+			test!(CSI::Reset(small_vec![CSI::Mode::ControlRepresentation]));
+			test!(CSI::Reset(small_vec![CSI::Mode::InsertionReplacement]));
+			test!(CSI::Reset(small_vec![CSI::Mode::StatusReportTransfer]));
+			test!(CSI::Reset(small_vec![CSI::Mode::Erasure]));
+			test!(CSI::Reset(small_vec![CSI::Mode::LineEditing]));
+			test!(CSI::Reset(small_vec![CSI::Mode::BidirectionalSupport]));
+			test!(CSI::Reset(small_vec![CSI::Mode::DeviceComponentSelect]));
+			test!(CSI::Reset(small_vec![CSI::Mode::CharacterEditing]));
+			test!(CSI::Reset(small_vec![CSI::Mode::PositioningUnit]));
+			test!(CSI::Reset(small_vec![CSI::Mode::SendReceive]));
+			test!(CSI::Reset(small_vec![CSI::Mode::FormatEffectorAction]));
+			test!(CSI::Reset(small_vec![CSI::Mode::FormatEffectorTransfer]));
+			test!(CSI::Reset(small_vec![CSI::Mode::MultipleAreaTransfer]));
+			test!(CSI::Reset(small_vec![CSI::Mode::TransferTermination]));
+			test!(CSI::Reset(small_vec![CSI::Mode::SelectedAreaTransfer]));
+			test!(CSI::Reset(small_vec![CSI::Mode::TabulationStop]));
+			test!(CSI::Reset(small_vec![CSI::Mode::GraphicRenditionCombination]));
+			test!(CSI::Reset(small_vec![CSI::Mode::ZeroDefault]));
 		}
 
 		#[test]
@@ -2128,26 +2152,26 @@ mod test {
 
 		#[test]
 		fn sm() {
-			test!(CSI::Set(vec![CSI::Mode::GuardedAreaTransfer]));
-			test!(CSI::Set(vec![CSI::Mode::KeyboardLock]));
-			test!(CSI::Set(vec![CSI::Mode::ControlRepresentation]));
-			test!(CSI::Set(vec![CSI::Mode::InsertionReplacement]));
-			test!(CSI::Set(vec![CSI::Mode::StatusReportTransfer]));
-			test!(CSI::Set(vec![CSI::Mode::Erasure]));
-			test!(CSI::Set(vec![CSI::Mode::LineEditing]));
-			test!(CSI::Set(vec![CSI::Mode::BidirectionalSupport]));
-			test!(CSI::Set(vec![CSI::Mode::DeviceComponentSelect]));
-			test!(CSI::Set(vec![CSI::Mode::CharacterEditing]));
-			test!(CSI::Set(vec![CSI::Mode::PositioningUnit]));
-			test!(CSI::Set(vec![CSI::Mode::SendReceive]));
-			test!(CSI::Set(vec![CSI::Mode::FormatEffectorAction]));
-			test!(CSI::Set(vec![CSI::Mode::FormatEffectorTransfer]));
-			test!(CSI::Set(vec![CSI::Mode::MultipleAreaTransfer]));
-			test!(CSI::Set(vec![CSI::Mode::TransferTermination]));
-			test!(CSI::Set(vec![CSI::Mode::SelectedAreaTransfer]));
-			test!(CSI::Set(vec![CSI::Mode::TabulationStop]));
-			test!(CSI::Set(vec![CSI::Mode::GraphicRenditionCombination]));
-			test!(CSI::Set(vec![CSI::Mode::ZeroDefault]));
+			test!(CSI::Set(small_vec![CSI::Mode::GuardedAreaTransfer]));
+			test!(CSI::Set(small_vec![CSI::Mode::KeyboardLock]));
+			test!(CSI::Set(small_vec![CSI::Mode::ControlRepresentation]));
+			test!(CSI::Set(small_vec![CSI::Mode::InsertionReplacement]));
+			test!(CSI::Set(small_vec![CSI::Mode::StatusReportTransfer]));
+			test!(CSI::Set(small_vec![CSI::Mode::Erasure]));
+			test!(CSI::Set(small_vec![CSI::Mode::LineEditing]));
+			test!(CSI::Set(small_vec![CSI::Mode::BidirectionalSupport]));
+			test!(CSI::Set(small_vec![CSI::Mode::DeviceComponentSelect]));
+			test!(CSI::Set(small_vec![CSI::Mode::CharacterEditing]));
+			test!(CSI::Set(small_vec![CSI::Mode::PositioningUnit]));
+			test!(CSI::Set(small_vec![CSI::Mode::SendReceive]));
+			test!(CSI::Set(small_vec![CSI::Mode::FormatEffectorAction]));
+			test!(CSI::Set(small_vec![CSI::Mode::FormatEffectorTransfer]));
+			test!(CSI::Set(small_vec![CSI::Mode::MultipleAreaTransfer]));
+			test!(CSI::Set(small_vec![CSI::Mode::TransferTermination]));
+			test!(CSI::Set(small_vec![CSI::Mode::SelectedAreaTransfer]));
+			test!(CSI::Set(small_vec![CSI::Mode::TabulationStop]));
+			test!(CSI::Set(small_vec![CSI::Mode::GraphicRenditionCombination]));
+			test!(CSI::Set(small_vec![CSI::Mode::ZeroDefault]));
 		}
 
 		#[test]

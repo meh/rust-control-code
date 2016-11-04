@@ -19,6 +19,8 @@
 pub extern crate nom;
 pub use nom::IResult as Result;
 
+extern crate smallvec;
+
 #[macro_use]
 mod util;
 

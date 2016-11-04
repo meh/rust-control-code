@@ -84,10 +84,10 @@ impl<'a> Format for DEC<'a> {
 				write!(b"\x1B9"),
 
 			SaveCursorPosition =>
-				write!(csi Unknown(b's', None, vec![])),
+				write!(csi Unknown(b's', None, small_vec![])),
 
 			RestoreCursorPosition =>
-				write!(csi Unknown(b'u', None, vec![])),
+				write!(csi Unknown(b'u', None, small_vec![])),
 
 			SelectCharset(group, charset) => {
 				use self::charset::*;
@@ -146,10 +146,10 @@ impl<'a> Format for DEC<'a> {
 				write!(csi Private(b'l', None, modes.iter().map(|&m| Some(m.into())).collect())),
 
 			DeleteColumn(n) =>
-				write!(csi Private(b'~', Some(b'\''), vec![Some(n)])),
+				write!(csi Private(b'~', Some(b'\''), small_vec![Some(n)])),
 
 			InsertColumn(n) =>
-				write!(csi Private(b'}', Some(b'\''), vec![Some(n)])),
+				write!(csi Private(b'}', Some(b'\''), small_vec![Some(n)])),
 
 			Double(Half::Top) =>
 				write!(b"\x1B#3"),
@@ -164,10 +164,10 @@ impl<'a> Format for DEC<'a> {
 				write!(b"\x1B#5"),
 
 			CursorStyle(id) =>
-				write!(csi Unknown(b'q', Some(b' '), vec![Some(id as u32)])),
+				write!(csi Unknown(b'q', Some(b' '), small_vec![Some(id as u32)])),
 
 			SoftReset =>
-				write!(csi Unknown(b'p', Some(b'!'), vec![])),
+				write!(csi Unknown(b'p', Some(b'!'), small_vec![])),
 
 			ResetInitial =>
 				write!(b"\x1Bc"),
@@ -186,7 +186,7 @@ impl<'a> Format for DEC<'a> {
 			}
 
 			ScrollRegion { top, bottom } =>
-				write!(csi Unknown(b'r', None, vec![Some(top + 1), bottom.map(|v| v + 1)])),
+				write!(csi Unknown(b'r', None, small_vec![Some(top + 1), bottom.map(|v| v + 1)])),
 		}
 
 		Ok(())

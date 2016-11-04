@@ -13,6 +13,7 @@
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
 use std::io::{self, Write};
+use smallvec::SmallVec;
 
 use {Format, C0, C1, DEC, CSI, SGR};
 
@@ -49,12 +50,12 @@ impl<'a> From<CSI::T> for Control<'a> {
 
 impl<'a> From<SGR::T> for Control<'a> {
 	fn from(value: SGR::T) -> Control<'a> {
-		Control::C1(C1::ControlSequence(CSI::SelectGraphicalRendition(vec![value])))
+		Control::C1(C1::ControlSequence(CSI::SelectGraphicalRendition(small_vec![value])))
 	}
 }
 
-impl<'a> From<Vec<SGR::T>> for Control<'a> {
-	fn from(value: Vec<SGR::T>) -> Control<'a> {
+impl<'a> From<SmallVec<[SGR::T; CSI::SIZE]>> for Control<'a> {
+	fn from(value: SmallVec<[SGR::T; CSI::SIZE]>) -> Control<'a> {
 		Control::C1(C1::ControlSequence(CSI::SelectGraphicalRendition(value)))
 	}
 }

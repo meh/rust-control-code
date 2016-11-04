@@ -73,3 +73,16 @@ macro_rules! with_args {
 		}
 	);
 }
+
+macro_rules! small_vec {
+	() => (
+		$crate::smallvec::SmallVec::new()
+	);
+
+	($($value:expr),+) => ({
+		let mut result = small_vec![];
+		$(result.push($value));*;
+
+		result
+	});
+}

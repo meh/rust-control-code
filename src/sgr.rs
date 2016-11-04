@@ -13,6 +13,8 @@
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
 use nom::{self, ErrorKind};
+use smallvec::SmallVec;
+use CSI;
 
 #[derive(Eq, PartialEq, Copy, Clone, Debug)]
 pub enum SGR {
@@ -47,104 +49,104 @@ pub enum Color {
 	Rgb(u8, u8, u8),
 }
 
-impl Into<Vec<u32>> for SGR {
-	fn into(self) -> Vec<u32> {
+impl Into<SmallVec<[u32; CSI::SIZE]>> for SGR {
+	fn into(self) -> SmallVec<[u32; CSI::SIZE]> {
 		match self {
 			Reset =>
-				vec![0],
+				small_vec![0],
 
 			Font(Weight::Bold) =>
-				vec![1],
+				small_vec![1],
 
 			Font(Weight::Faint) =>
-				vec![2],
+				small_vec![2],
 
 			Italic(true) =>
-				vec![3],
+				small_vec![3],
 
 			Underline(true) =>
-				vec![4],
+				small_vec![4],
 
 			Blink(true) =>
-				vec![5],
+				small_vec![5],
 
 			Reverse(true) =>
-				vec![7],
+				small_vec![7],
 
 			Invisible(true) =>
-				vec![8],
+				small_vec![8],
 
 			Struck(true) =>
-				vec![9],
+				small_vec![9],
 
 			Font(Weight::Normal) =>
-				vec![22],
+				small_vec![22],
 
 			Italic(false) =>
-				vec![23],
+				small_vec![23],
 
 			Underline(false) =>
-				vec![24],
+				small_vec![24],
 
 			Blink(false) =>
-				vec![25],
+				small_vec![25],
 
 			Reverse(false) =>
-				vec![27],
+				small_vec![27],
 
 			Invisible(false) =>
-				vec![28],
+				small_vec![28],
 
 			Struck(false) =>
-				vec![29],
+				small_vec![29],
 
 			Foreground(Color::Index(index)) if index < 8 =>
-				vec![index as u32 + 30],
+				small_vec![index as u32 + 30],
 
 			Foreground(Color::Index(index)) if index < 16 =>
-				vec![index as u32 - 8 + 90],
+				small_vec![index as u32 - 8 + 90],
 
 			Foreground(Color::Index(index)) =>
-				vec![38, 5, index as u32],
+				small_vec![38, 5, index as u32],
 
 			Foreground(Color::Default) =>
-				vec![38, 0],
+				small_vec![38, 0],
 
 			Foreground(Color::Transparent) =>
-				vec![38, 1],
+				small_vec![38, 1],
 
 			Foreground(Color::Rgb(r, g, b)) =>
-				vec![38, 2, r as u32, g as u32, b as u32],
+				small_vec![38, 2, r as u32, g as u32, b as u32],
 
 			Foreground(Color::Cmy(c, m, y)) =>
-				vec![38, 3, c as u32, m as u32, y as u32],
+				small_vec![38, 3, c as u32, m as u32, y as u32],
 
 			Foreground(Color::Cmyk(c, m, y, k)) =>
-				vec![38, 4, c as u32, m as u32, y as u32, k as u32],
+				small_vec![38, 4, c as u32, m as u32, y as u32, k as u32],
 
 			Background(Color::Index(index)) if index < 8 =>
-				vec![index as u32 + 40],
+				small_vec![index as u32 + 40],
 
 			Background(Color::Index(index)) if index < 16 =>
-				vec![index as u32 - 8 + 100],
+				small_vec![index as u32 - 8 + 100],
 
 			Background(Color::Index(index)) =>
-				vec![48, 5, index as u32],
+				small_vec![48, 5, index as u32],
 
 			Background(Color::Default) =>
-				vec![48, 0],
+				small_vec![48, 0],
 
 			Background(Color::Transparent) =>
-				vec![48, 1],
+				small_vec![48, 1],
 
 			Background(Color::Rgb(r, g, b)) =>
-				vec![48, 2, r as u32, g as u32, b as u32],
+				small_vec![48, 2, r as u32, g as u32, b as u32],
 
 			Background(Color::Cmy(c, m, y)) =>
-				vec![48, 3, c as u32, m as u32, y as u32],
+				small_vec![48, 3, c as u32, m as u32, y as u32],
 
 			Background(Color::Cmyk(c, m, y, k)) =>
-				vec![48, 4, c as u32, m as u32, y as u32, k as u32],
+				small_vec![48, 4, c as u32, m as u32, y as u32, k as u32],
 		}
 	}
 }
@@ -215,12 +217,12 @@ macro_rules! color {
 	})
 }
 
-pub fn parse<'a, 'b>(args: &'b [Option<u32>]) -> Result<Vec<SGR>, nom::Err<&'a [u8]>> {
+pub fn parse<'a, 'b>(args: &'b [Option<u32>]) -> Result<SmallVec<[SGR; CSI::SIZE]>, nom::Err<&'a [u8]>> {
 	if args.is_empty() {
-		return Ok(vec![Reset]);
+		return Ok(small_vec![Reset]);
 	}
 
-	let mut result = Vec::new();
+	let mut result = SmallVec::new();
 	let mut args   = args;
 
 	while !args.is_empty() {
@@ -322,7 +324,7 @@ mod test {
 
 		macro_rules! test {
 			($string:expr => $($attrs:expr),+) => (
-				assert_eq!(Control::C1(C1::ControlSequence(CSI::SelectGraphicalRendition(vec![$($attrs),*]))),
+				assert_eq!(Control::C1(C1::ControlSequence(CSI::SelectGraphicalRendition(small_vec![$($attrs),*]))),
 					parse($string).unwrap().1);
 			);
 		}
@@ -479,7 +481,7 @@ mod test {
 		macro_rules! test {
 			($($attr:expr),+) => (
 				let item = Control::C1(C1::ControlSequence(CSI::SelectGraphicalRendition(
-					vec![$($attr),*])));
+					small_vec![$($attr),*])));
 
 				assert_eq!(item, parse(&format(&item, true)).unwrap().1);
 				assert_eq!(item, parse(&format(&item, false)).unwrap().1);
