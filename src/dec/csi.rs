@@ -12,6 +12,7 @@
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
+use smallvec::SmallVec;
 use DEC::T as DEC;
 use DEC::*;
 
@@ -41,13 +42,13 @@ pub fn private<'a>(id: u8, modifier: Option<u8>, args: &[Option<u32>]) -> Option
 with_args!(SM<args> -> DEC<'a>, ?
 	args.iter().map(|d| d.unwrap_or(0))
 		.map(Mode::parse)
-		.collect::<Result<Vec<_>, _>>()
+		.collect::<Result<SmallVec<_>, _>>()
 		.map(Set));
 
 with_args!(RM<args> -> DEC<'a>, ?
 	args.iter().map(|d| d.unwrap_or(0))
 		.map(Mode::parse)
-		.collect::<Result<Vec<_>, _>>()
+		.collect::<Result<SmallVec<_>, _>>()
 		.map(Reset));
 
 with_args!(DECDC<1, args> -> DEC<'a>,

@@ -21,7 +21,7 @@ use smallvec::SmallVec;
 
 use Format;
 
-pub const SIZE: usize = 16;
+pub const SIZE: usize = 8;
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub enum CSI {

@@ -14,6 +14,7 @@
 
 use std::io::{self, Write};
 use std::str;
+use smallvec::SmallVec;
 use {Format, CSI};
 
 #[derive(Eq, PartialEq, Clone, Debug)]
@@ -27,8 +28,8 @@ pub enum DEC<'a> {
 	SaveCursorPosition,
 	RestoreCursorPosition,
 	SelectCharset(u8, Charset),
-	Set(Vec<Mode>),
-	Reset(Vec<Mode>),
+	Set(SmallVec<[Mode; CSI::SIZE]>),
+	Reset(SmallVec<[Mode; CSI::SIZE]>),
 	DeleteColumn(u32),
 	InsertColumn(u32),
 	Double(Half),
