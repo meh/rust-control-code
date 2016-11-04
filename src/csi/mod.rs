@@ -16,7 +16,7 @@ use std::str;
 use std::u32;
 use std::io::{self, Write};
 use std::iter::FromIterator;
-use nom::{self, IResult, ErrorKind};
+use nom::{self, ErrorKind};
 use smallvec::SmallVec;
 
 use Format;
@@ -439,28 +439,8 @@ named!(normal<CSI>,
 
 		|| res));
 
-fn parameters(mut i: &[u8]) -> IResult<&[u8], SmallVec<[Option<u32>; SIZE]>> {
-	let mut result = SmallVec::new();
-
-	loop {
-		match parameter(i) {
-			IResult::Done(rest, item) => {
-				i = rest;
-				result.push(item);
-			}
-
-			IResult::Incomplete(how) => {
-				return IResult::Incomplete(how);
-			}
-
-			IResult::Error(_) => {
-				break;
-			}
-		}
-	}
-
-	IResult::Done(i, result)
-}
+named!(parameters<SmallVec<[Option<u32>; SIZE]>>,
+	many0!(SIZE, parameter));
 
 named!(parameter<Option<u32> >,
 	alt!(

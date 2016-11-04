@@ -86,3 +86,91 @@ macro_rules! small_vec {
 		result
 	});
 }
+
+macro_rules! many0 {
+  ($i:expr, $submac:ident!( $($args:tt)* )) => ({
+      use $crate::nom::InputLength;
+
+      let ret;
+      let mut res   = Vec::new();
+      let mut input = $i;
+
+      loop {
+        if input.input_len() == 0 {
+          ret = $crate::nom::IResult::Done(input, res); break;
+        }
+
+        match $submac!(input, $($args)*) {
+          $crate::nom::IResult::Error(_)                            => {
+            ret = $crate::nom::IResult::Done(input, res); break;
+          },
+          $crate::nom::IResult::Incomplete($crate::nom::Needed::Unknown) => {
+            ret = $crate::nom::IResult::Incomplete($crate::nom::Needed::Unknown); break;
+          },
+          $crate::nom::IResult::Incomplete($crate::nom::Needed::Size(i)) => {
+            let size = i + ($i).input_len() - input.input_len();
+            ret = $crate::nom::IResult::Incomplete($crate::nom::Needed::Size(size)); break;
+          },
+          $crate::nom::IResult::Done(i, o)                          => {
+            // loop trip must always consume (otherwise infinite loops)
+            if i == input {
+              ret = $crate::nom::IResult::Error($crate::nom::Err::Position($crate::nom::ErrorKind::Many0,input)); break;
+            }
+
+            res.push(o);
+            input = i;
+          }
+        }
+      }
+
+      ret
+    }
+  );
+
+  ($i:expr, $f:expr) => (
+    many0!($i, call!($f));
+  );
+
+  ($i:expr, $n:tt, $submac:ident!( $($args:tt)* )) => ({
+      use $crate::nom::InputLength;
+
+      let ret;
+      let mut res   = $crate::smallvec::SmallVec::<[_; $n]>::new();
+      let mut input = $i;
+
+      loop {
+        if input.input_len() == 0 {
+          ret = $crate::nom::IResult::Done(input, res); break;
+        }
+
+        match $submac!(input, $($args)*) {
+          $crate::nom::IResult::Error(_)                            => {
+            ret = $crate::nom::IResult::Done(input, res); break;
+          },
+          $crate::nom::IResult::Incomplete($crate::nom::Needed::Unknown) => {
+            ret = $crate::nom::IResult::Incomplete($crate::nom::Needed::Unknown); break;
+          },
+          $crate::nom::IResult::Incomplete($crate::nom::Needed::Size(i)) => {
+            let size = i + ($i).input_len() - input.input_len();
+            ret = $crate::nom::IResult::Incomplete($crate::nom::Needed::Size(size)); break;
+          },
+          $crate::nom::IResult::Done(i, o)                          => {
+            // loop trip must always consume (otherwise infinite loops)
+            if i == input {
+              ret = $crate::nom::IResult::Error($crate::nom::Err::Position($crate::nom::ErrorKind::Many0,input)); break;
+            }
+
+            res.push(o);
+            input = i;
+          }
+        }
+      }
+
+      ret
+    }
+  );
+
+  ($i:expr, $n:tt, $f:expr) => (
+    many0!($i, $n, call!($f));
+  );
+}
