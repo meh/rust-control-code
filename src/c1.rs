@@ -193,7 +193,7 @@ impl<'a> Format for C1<'a> {
 }
 
 named!(pub parse<C1>,
-	alt!(one | two | three));
+	alt!(two | one));
 
 named!(one<C1>,
 	switch!(take!(1),
@@ -265,44 +265,6 @@ named!(two<C1>,
 			b"\x5A" => call!(SCI)  |
 			b"\x5E" => call!(PM)   |
 			b"\x5F" => call!(APC)),
-
-	|| res));
-
-named!(three<C1>,
-	chain!(tag!(b"\xEF\x86") ~
-		res: switch!(take!(1),
-			b"\x9B" => call!(CSI) |
-			b"\x9D" => call!(OSC) |
-	
-			b"\x80" => call!(PAD)  |
-			b"\x81" => call!(HOP)  |
-			b"\x82" => call!(BPH)  |
-			b"\x83" => call!(NBH)  |
-			b"\x84" => call!(IND)  |
-			b"\x85" => call!(NEL)  |
-			b"\x86" => call!(SSA)  |
-			b"\x87" => call!(ESA)  |
-			b"\x88" => call!(HTS)  |
-			b"\x89" => call!(HTJ)  |
-			b"\x8A" => call!(VTS)  |
-			b"\x8B" => call!(PLD)  |
-			b"\x8C" => call!(PLU)  |
-			b"\x8D" => call!(RI)   |
-			b"\x8E" => call!(SS2)  |
-			b"\x8F" => call!(SS3)  |
-			b"\x90" => call!(DCS)  |
-			b"\x91" => call!(PU1)  |
-			b"\x92" => call!(PU2)  |
-			b"\x93" => call!(STS)  |
-			b"\x94" => call!(CCH)  |
-			b"\x95" => call!(MW)   |
-			b"\x96" => call!(SPA)  |
-			b"\x97" => call!(EPA)  |
-			b"\x98" => call!(SOS)  |
-			b"\x99" => call!(SGCI) |
-			b"\x9A" => call!(SCI)  |
-			b"\x9E" => call!(PM)   |
-			b"\x9F" => call!(APC)),
 
 	|| res));
 
