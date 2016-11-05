@@ -439,7 +439,7 @@ named!(normal<CSI>,
 
 		|| res));
 
-named!(parameters<SmallVec<[Option<u32>; SIZE]>>,
+named!(parameters<SmallVec<[Option<u32>; SIZE]> >,
 	many0!(SIZE, parameter));
 
 named!(parameter<Option<u32> >,
