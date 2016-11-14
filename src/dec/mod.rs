@@ -41,6 +41,7 @@ pub enum DEC<'a> {
 	SevenBits,
 	EightBits,
 	DefineFunctionKey(u8, &'a str),
+	Unicode(bool),
 
 	ScrollRegion {
 		top:    u32,
@@ -186,6 +187,11 @@ impl<'a> Format for DEC<'a> {
 				write!(b"'");
 			}
 
+			Unicode(value) => {
+				write!(b"\x1B%");
+				write!(&[if value { b'G' } else { b'@' }]);
+			}
+
 			ScrollRegion { top, bottom } =>
 				write!(csi Unknown(b'r', None, small_vec![Some(top + 1), bottom.map(|v| v + 1)])),
 		}
@@ -216,6 +222,10 @@ named!(pub parse<DEC>,
 			b" " => switch!(take!(1),
 				b"F" => call!(S7C1T)  |
 				b"G" => call!(S8C1T)) |
+
+			b"%" => switch!(take!(1),
+				b"G" => value!(Unicode(true))   |
+				b"@" => value!(Unicode(false))) |
 
 			b"Q" => call!(SCODFK) |
 
@@ -497,6 +507,15 @@ mod test {
 			test!(b"\x1B[!p" =>
 				DEC::SoftReset);
 		}
+
+		#[test]
+		fn unicode() {
+			test!(b"\x1B%G" =>
+				DEC::Unicode(true));
+
+			test!(b"\x1B%@" =>
+				DEC::Unicode(false));
+		}
 	}
 
 	mod format {
@@ -598,6 +617,12 @@ mod test {
 		fn decstbm() {
 			test!(DEC::ScrollRegion { top: 0, bottom: None });
 			test!(DEC::ScrollRegion { top: 20, bottom: Some(22) });
+		}
+
+		#[test]
+		fn unicode() {
+			test!(DEC::Unicode(true));
+			test!(DEC::Unicode(false));
 		}
 
 		#[test]
