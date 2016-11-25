@@ -40,7 +40,7 @@ pub enum Mode {
 }
 
 impl Mode {
-	pub fn parse<'a>(value: u32) -> Result<Self, nom::Err<&'a [u8]>> {
+	pub fn parse<'a>(value: u32) -> Result<Self, nom::ErrorKind> {
 		match value {
 			1  => Ok(Mode::GuardedAreaTransfer),
 			2  => Ok(Mode::KeyboardLock),
@@ -63,7 +63,7 @@ impl Mode {
 			20 => Ok(Mode::LineFeed),
 			21 => Ok(Mode::GraphicRenditionCombination),
 			22 => Ok(Mode::ZeroDefault),
-			_  => Err(nom::Err::Code(nom::ErrorKind::Custom(9004))),
+			_  => Err(nom::ErrorKind::Custom(9004)),
 		}
 	}
 }

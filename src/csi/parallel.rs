@@ -25,7 +25,7 @@ pub enum Parallel {
 }
 
 impl Parallel {
-	pub fn parse<'a>(value: u32) -> Result<Self, nom::Err<&'a [u8]>> {
+	pub fn parse<'a>(value: u32) -> Result<Self, nom::ErrorKind> {
 		match value {
 			0 => Ok(Parallel::End),
 			1 => Ok(Parallel::Start),
@@ -33,7 +33,7 @@ impl Parallel {
 			3 => Ok(Parallel::StartPhoneticJapanese),
 			4 => Ok(Parallel::StartPhoneticChinese),
 			5 => Ok(Parallel::StopPhonetic),
-			_ => Err(nom::Err::Code(nom::ErrorKind::Custom(9002))),
+			_ => Err(nom::ErrorKind::Custom(9002)),
 		}
 	}
 }

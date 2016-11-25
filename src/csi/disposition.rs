@@ -26,7 +26,7 @@ pub enum Disposition {
 }
 
 impl Disposition {
-	pub fn parse<'a>(value: u32) -> Result<Self, nom::Err<&'a [u8]>> {
+	pub fn parse<'a>(value: u32) -> Result<Self, nom::ErrorKind> {
 		match value {
 			0 => Ok(Disposition::ToHome),
 			1 => Ok(Disposition::ToHomeWithLeader),
@@ -35,7 +35,7 @@ impl Disposition {
 			4 => Ok(Disposition::ToLimit),
 			5 => Ok(Disposition::ToLimitWithLeader),
 			6 => Ok(Disposition::ToBoth),
-			_ => Err(nom::Err::Code(nom::ErrorKind::Custom(9002))),
+			_ => Err(nom::ErrorKind::Custom(9002)),
 		}
 	}
 }

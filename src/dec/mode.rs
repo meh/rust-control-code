@@ -58,7 +58,7 @@ pub enum Mode {
 }
 
 impl Mode {
-	pub fn parse<'a>(value: u32) -> Result<Self, nom::Err<&'a [u8]>> {
+	pub fn parse<'a>(value: u32) -> Result<Self, nom::ErrorKind> {
 		match value {
 			1   => Ok(Mode::ApplicationCursor),
 			2   => Ok(Mode::Ansi),
@@ -100,7 +100,7 @@ impl Mode {
 			109 => Ok(Mode::CapsLock),
 			110 => Ok(Mode::HostIndicatorLed),
 
-			_ => Err(nom::Err::Code(nom::ErrorKind::Custom(9004))),
+			_ => Err(nom::ErrorKind::Custom(9004)),
 		}
 	}
 }

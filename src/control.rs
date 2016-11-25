@@ -102,7 +102,7 @@ pub fn parse(i: &[u8]) -> IResult<&[u8], Control> {
 	}
 
 	if TABLE[i[0] as usize] == 0 {
-		return IResult::Error(nom::Err::Code(nom::ErrorKind::Custom(0)));
+		return IResult::Error(nom::ErrorKind::Custom(0));
 	}
 
 	control(i)

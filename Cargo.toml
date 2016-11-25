@@ -10,5 +10,5 @@ repository  = "https://github.com/meh/rust-control-code"
 keywords    = ["ecma48", "iso6429", "control"]
 
 [dependencies]
-nom      = "1.0"
+nom      = "2.0"
 smallvec = "0.2"

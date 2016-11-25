@@ -22,12 +22,12 @@ pub enum Erase {
 }
 
 impl Erase {
-	pub fn parse<'a>(value: u32) -> Result<Self, nom::Err<&'a [u8]>> {
+	pub fn parse<'a>(value: u32) -> Result<Self, nom::ErrorKind> {
 		match value {
 			0 => Ok(Erase::ToEnd),
 			1 => Ok(Erase::ToStart),
 			2 => Ok(Erase::All),
-			_ => Err(nom::Err::Code(nom::ErrorKind::Custom(9002))),
+			_ => Err(nom::ErrorKind::Custom(9002)),
 		}
 	}
 }

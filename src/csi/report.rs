@@ -20,10 +20,10 @@ pub enum Report {
 }
 
 impl Report {
-	pub fn parse<'a>(value: u32) -> Result<Self, nom::Err<&'a [u8]>> {
+	pub fn parse<'a>(value: u32) -> Result<Self, nom::ErrorKind> {
 		match value {
 			6 => Ok(Report::CursorPosition),
-			_ => Err(nom::Err::Code(nom::ErrorKind::Custom(9008))),
+			_ => Err(nom::ErrorKind::Custom(9008)),
 		}
 	}
 }

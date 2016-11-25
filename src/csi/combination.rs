@@ -22,12 +22,12 @@ pub enum Combination {
 }
 
 impl Combination {
-	pub fn parse<'a>(value: u32) -> Result<Self, nom::Err<&'a [u8]>> {
+	pub fn parse<'a>(value: u32) -> Result<Self, nom::ErrorKind> {
 		match value {
 			0 => Ok(Combination::Next),
 			1 => Ok(Combination::Start),
 			2 => Ok(Combination::End),
-			_ => Err(nom::Err::Code(nom::ErrorKind::Custom(9005))),
+			_ => Err(nom::ErrorKind::Custom(9005)),
 		}
 	}
 }

@@ -231,7 +231,7 @@ named!(one<C1>,
 		b"\x9F" => call!(APC)));
 
 named!(two<C1>,
-	chain!(tag!(b"\x1B") ~
+	do_parse!(tag!(b"\x1B") >>
 		res: switch!(take!(1),
 			b"\x5B" => call!(CSI) |
 			b"\x5D" => call!(OSC)  |
@@ -264,9 +264,9 @@ named!(two<C1>,
 			b"\x59" => call!(SGCI) |
 			b"\x5A" => call!(SCI)  |
 			b"\x5E" => call!(PM)   |
-			b"\x5F" => call!(APC)),
+			b"\x5F" => call!(APC)) >>
 
-	|| res));
+	(res)));
 
 named!(PAD<C1>,
 	value!(PaddingCharacter));

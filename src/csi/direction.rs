@@ -21,11 +21,11 @@ pub enum Direction {
 }
 
 impl Direction {
-	pub fn parse<'a>(value: u32) -> Result<Self, nom::Err<&'a [u8]>> {
+	pub fn parse<'a>(value: u32) -> Result<Self, nom::ErrorKind> {
 		match value {
 			0 => Ok(Direction::Forward),
 			1 => Ok(Direction::Backward),
-			_ => Err(nom::Err::Code(nom::ErrorKind::Custom(9002))),
+			_ => Err(nom::ErrorKind::Custom(9002)),
 		}
 	}
 }

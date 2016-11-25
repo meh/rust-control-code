@@ -22,12 +22,12 @@ pub enum Expansion {
 }
 
 impl Expansion {
-	pub fn parse<'a>(value: u32) -> Result<Self, nom::Err<&'a [u8]>> {
+	pub fn parse<'a>(value: u32) -> Result<Self, nom::ErrorKind> {
 		match value {
 			0 => Ok(Expansion::Normal),
 			1 => Ok(Expansion::Expanded),
 			2 => Ok(Expansion::Condensed),
-			_ => Err(nom::Err::Code(nom::ErrorKind::Custom(9002))),
+			_ => Err(nom::ErrorKind::Custom(9002)),
 		}
 	}
 }

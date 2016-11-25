@@ -25,7 +25,7 @@ pub enum Tabulation {
 }
 
 impl Tabulation {
-	pub fn parse<'a>(value: u32) -> Result<Self, nom::Err<&'a [u8]>> {
+	pub fn parse<'a>(value: u32) -> Result<Self, nom::ErrorKind> {
 		match value {
 			0 => Ok(Tabulation::Character),
 			1 => Ok(Tabulation::Line),
@@ -33,7 +33,7 @@ impl Tabulation {
 			3 => Ok(Tabulation::AllCharacters),
 			4 => Ok(Tabulation::AllLines),
 			5 => Ok(Tabulation::All),
-			_ => Err(nom::Err::Code(nom::ErrorKind::Custom(9003))),
+			_ => Err(nom::ErrorKind::Custom(9003)),
 		}
 	}
 }

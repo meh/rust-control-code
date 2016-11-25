@@ -12,7 +12,7 @@
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
-use nom::{self, ErrorKind};
+use nom;
 use smallvec::SmallVec;
 use CSI;
 
@@ -212,12 +212,12 @@ macro_rules! color {
 			}
 
 			_ =>
-				return Err(nom::Err::Code(ErrorKind::Custom(9006)))
+				return Err(nom::ErrorKind::Custom(9006))
 		}
 	})
 }
 
-pub fn parse<'a, 'b>(args: &'b [Option<u32>]) -> Result<SmallVec<[SGR; CSI::SIZE]>, nom::Err<&'a [u8]>> {
+pub fn parse<'a, 'b>(args: &'b [Option<u32>]) -> Result<SmallVec<[SGR; CSI::SIZE]>, nom::ErrorKind> {
 	if args.is_empty() {
 		return Ok(small_vec![Reset]);
 	}
@@ -303,7 +303,7 @@ pub fn parse<'a, 'b>(args: &'b [Option<u32>]) -> Result<SmallVec<[SGR; CSI::SIZE
 				Background(Color::Index(c as u8 - 100 + 8)),
 
 			_ =>
-				return Err(nom::Err::Code(ErrorKind::Custom(9001)))
+				return Err(nom::ErrorKind::Custom(9001))
 		});
 	}
 

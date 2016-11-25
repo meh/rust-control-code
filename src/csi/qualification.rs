@@ -31,7 +31,7 @@ pub enum Qualification {
 }
 
 impl Qualification {
-	pub fn parse<'a>(value: u32) -> Result<Self, nom::Err<&'a [u8]>> {
+	pub fn parse<'a>(value: u32) -> Result<Self, nom::ErrorKind> {
 		match value {
 			0  => Ok(Qualification::UnprotectedUnguarded),
 			1  => Ok(Qualification::ProtectedGuarded),
@@ -45,7 +45,7 @@ impl Qualification {
 			9  => Ok(Qualification::SpaceFill),
 			10 => Ok(Qualification::AlignFirst),
 			11 => Ok(Qualification::Reverse),
-			_  => Err(nom::Err::Code(nom::ErrorKind::Custom(9004))),
+			_  => Err(nom::ErrorKind::Custom(9004)),
 		}
 	}
 }

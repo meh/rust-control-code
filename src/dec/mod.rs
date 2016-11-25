@@ -210,7 +210,7 @@ pub mod charset;
 pub use self::charset::Charset;
 
 named!(pub parse<DEC>,
-	chain!(tag!(b"\x1B") ~
+	do_parse!(tag!(b"\x1B") >>
 		res: switch!(take!(1),
 			b"#" => switch!(take!(1),
 				b"3" => call!(DECDHLT) |
@@ -244,9 +244,9 @@ named!(pub parse<DEC>,
 			b"8" => call!(DECRC)   |
 			b"9" => call!(DECFI)   |
 			b"=" => call!(DECKPAM) |
-			b">" => call!(DECKPNM)),
+			b">" => call!(DECKPNM)) >>
 
-	|| res));
+	(res)));
 
 named!(DECALN<DEC>,
 	value!(AlignmentTest));
@@ -291,14 +291,13 @@ named!(S8C1T<DEC>,
 	value!(EightBits));
 
 named!(SCODFK<DEC>,
-	chain!(
-		key: take!(1) ~
+	do_parse!(
+		key:       take!(1) >>
+		delimiter: take!(1) >>
+		string:    take_until!(delimiter) >>
+		tag!(delimiter) >>
 
-		delimiter: take!(1) ~
-		string:    take_until!(delimiter) ~
-		tag!(delimiter),
-
-		|| DefineFunctionKey(key[0] - b'0' + 1, unsafe { str::from_utf8_unchecked(string) })));
+		(DefineFunctionKey(key[0] - b'0' + 1, unsafe { str::from_utf8_unchecked(string) }))));
 
 named!(SCS<Charset>,
 	switch!(take!(1),

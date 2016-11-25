@@ -28,7 +28,7 @@ pub enum Unit {
 }
 
 impl Unit {
-	pub fn parse<'a>(value: u32) -> Result<Self, nom::Err<&'a [u8]>> {
+	pub fn parse<'a>(value: u32) -> Result<Self, nom::ErrorKind> {
 		match value {
 			0 => Ok(Unit::Character),
 			1 => Ok(Unit::Millimeter),
@@ -39,7 +39,7 @@ impl Unit {
 			6 => Ok(Unit::Micrometer),
 			7 => Ok(Unit::Pixel),
 			8 => Ok(Unit::Decipoint),
-			_ => Err(nom::Err::Code(nom::ErrorKind::Custom(9002))),
+			_ => Err(nom::ErrorKind::Custom(9002)),
 		}
 	}
 }

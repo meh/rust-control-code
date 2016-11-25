@@ -26,7 +26,7 @@ pub enum TabulationControl {
 }
 
 impl TabulationControl {
-	pub fn parse<'a>(value: u32) -> Result<Self, nom::Err<&'a [u8]>> {
+	pub fn parse<'a>(value: u32) -> Result<Self, nom::ErrorKind> {
 		match value {
 			0 => Ok(TabulationControl::Character),
 			1 => Ok(TabulationControl::Line),
@@ -35,7 +35,7 @@ impl TabulationControl {
 			4 => Ok(TabulationControl::ClearCharacters),
 			5 => Ok(TabulationControl::ClearAllCharacters),
 			6 => Ok(TabulationControl::ClearAllLines),
-			_ => Err(nom::Err::Code(nom::ErrorKind::Custom(9003))),
+			_ => Err(nom::ErrorKind::Custom(9003)),
 		}
 	}
 }

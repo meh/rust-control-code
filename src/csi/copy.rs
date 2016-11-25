@@ -27,7 +27,7 @@ pub enum Copy {
 }
 
 impl Copy {
-	pub fn parse<'a>(value: u32) -> Result<Self, nom::Err<&'a [u8]>> {
+	pub fn parse<'a>(value: u32) -> Result<Self, nom::ErrorKind> {
 		match value {
 			0 => Ok(Copy::ToPrimary),
 			1 => Ok(Copy::FromPrimary),
@@ -37,7 +37,7 @@ impl Copy {
 			5 => Ok(Copy::StartPrimary),
 			6 => Ok(Copy::StopSecondary),
 			7 => Ok(Copy::StartSecondary),
-			_ => Err(nom::Err::Code(nom::ErrorKind::Custom(9005))),
+			_ => Err(nom::ErrorKind::Custom(9005)),
 		}
 	}
 }

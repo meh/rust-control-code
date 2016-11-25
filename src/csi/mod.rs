@@ -16,7 +16,7 @@ use std::str;
 use std::u32;
 use std::io::{self, Write};
 use std::iter::FromIterator;
-use nom::{self, ErrorKind};
+use nom;
 use smallvec::SmallVec;
 
 use Format;
@@ -422,22 +422,22 @@ named!(pub parse<CSI>,
 	alt!(private | normal));
 
 named!(private<CSI>,
-	chain!(
-		char!('?') ~
-		args:     parameters ~
-		modifier: opt!(one_of!(MODIFIER)) ~
-		id:       one_of!(LETTER),
+	do_parse!(
+		char!('?')                        >>
+		args:     parameters              >>
+		modifier: opt!(one_of!(MODIFIER)) >>
+		id:       one_of!(LETTER)         >>
 
-		|| Private(id as u8, modifier.map(|c| c as u8), args)));
+		(Private(id as u8, modifier.map(|c| c as u8), args))));
 
 named!(normal<CSI>,
-	chain!(
-		args:     parameters ~
-		modifier: opt!(one_of!(MODIFIER)) ~
-		id:       one_of!(LETTER) ~
-		res:      expr_opt!(standard(id, modifier, args)),
+	do_parse!(
+		args:     parameters >>
+		modifier: opt!(one_of!(MODIFIER)) >>
+		id:       one_of!(LETTER) >>
+		res:      expr_opt!(standard(id, modifier, args)) >>
 
-		|| res));
+		(res)));
 
 named!(parameters<SmallVec<[Option<u32>; SIZE]> >,
 	many0!(SIZE, parameter));
@@ -445,11 +445,11 @@ named!(parameters<SmallVec<[Option<u32>; SIZE]> >,
 named!(parameter<Option<u32> >,
 	alt!(
 		char!(';') => { |_| None } |
-		chain!(
-			number: is_a!(DIGIT) ~
-			opt!(char!(';')),
+		do_parse!(
+			number: is_a!(DIGIT) >>
+			opt!(char!(';')) >>
 
-			|| number) => { |n| Some(number(n)) }));
+			(number)) => { |n| Some(number(n)) }));
 
 fn number(i: &[u8]) -> u32 {
 	let mut n = 0;
@@ -709,7 +709,7 @@ with_args!(SCO<1, args> -> CSI, ?
 		5 => Ok(CharacterOrientation(225)),
 		6 => Ok(CharacterOrientation(270)),
 		7 => Ok(CharacterOrientation(315)),
-		_ => Err(nom::Err::Code::<&[u8], u32>(ErrorKind::Custom(9002))),
+		_ => Err(nom::ErrorKind::Custom(9002)),
 	});
 
 with_args!(SCP -> CSI,
@@ -746,7 +746,7 @@ with_args!(SRS<1, args> -> CSI, ?
 	match arg!(args[0] => 0) {
 		0 => Ok(ReverseString(false)),
 		1 => Ok(ReverseString(true)),
-		_ => Err(nom::Err::Code::<&[u8], u32>(ErrorKind::Custom(9002))),
+		_ => Err(nom::ErrorKind::Custom(9002)),
 	});
 
 with_args!(SSU<1, args> -> CSI, ?
