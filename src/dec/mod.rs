@@ -15,6 +15,7 @@
 use std::io::{self, Write};
 use std::str;
 use smallvec::SmallVec;
+use nom;
 use {Format, CSI};
 
 #[derive(Eq, PartialEq, Clone, Debug)]
@@ -292,12 +293,27 @@ named!(S8C1T<DEC>,
 
 named!(SCODFK<DEC>,
 	do_parse!(
-		key:       take!(1) >>
+		key:       is_key >>
 		delimiter: take!(1) >>
 		string:    take_until!(delimiter) >>
 		tag!(delimiter) >>
 
-		(DefineFunctionKey(key[0] - b'0' + 1, unsafe { str::from_utf8_unchecked(string) }))));
+		(DefineFunctionKey(key, unsafe { str::from_utf8_unchecked(string) }))));
+
+fn is_key(i: &[u8]) -> nom::IResult<&[u8], u8> {
+	if i.is_empty() {
+		return nom::IResult::Incomplete(nom::Needed::Unknown);
+	}
+
+	let key = i[0];
+
+	if key >= b'0' && key <= b'k' {
+		nom::IResult::Done(&i[1 ..], key - b'0' + 1)
+	}
+	else {
+		nom::IResult::Error(nom::ErrorKind::Custom(0))
+	}
+}
 
 named!(SCS<Charset>,
 	switch!(take!(1),
