@@ -452,13 +452,13 @@ named!(parameter<Option<u32> >,
 			(number)) => { |n| Some(number(n)) }));
 
 fn number(i: &[u8]) -> u32 {
-	let mut n = 0;
+	let mut n: u32 = 0;
 
 	for &ch in i {
 		let d = (ch as u32).wrapping_sub(b'0' as u32);
 
 		if d <= 9 {
-			n = (n * 10) + d;
+			n = n.saturating_mul(10).saturating_add(d);
 		}
 	}
 
