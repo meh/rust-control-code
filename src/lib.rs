@@ -20,6 +20,7 @@ pub extern crate nom;
 pub use nom::IResult as Result;
 
 extern crate smallvec;
+extern crate bit_vec;
 
 #[macro_use]
 mod util;

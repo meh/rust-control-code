@@ -18,6 +18,7 @@ pub trait Format {
 	fn fmt<W: Write>(&self, f: W, wide: bool) -> io::Result<()>;
 }
 
+#[inline]
 pub fn format<T: Format>(value: &T, wide: bool) -> Vec<u8> {
 	let mut result = Vec::new();
 	value.fmt(&mut result, wide).unwrap();
@@ -25,6 +26,7 @@ pub fn format<T: Format>(value: &T, wide: bool) -> Vec<u8> {
 	result
 }
 
+#[inline]
 pub fn format_to<T: Format, W: Write>(output: W, value: &T, wide: bool) -> io::Result<()> {
 	value.fmt(output, wide)
 }

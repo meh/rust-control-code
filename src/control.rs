@@ -26,42 +26,49 @@ pub enum Control<'a> {
 }
 
 impl<'a> From<C0::T> for Control<'a> {
+	#[inline]
 	fn from(value: C0::T) -> Control<'a> {
 		Control::C0(value)
 	}
 }
 
 impl<'a> From<C1::T<'a>> for Control<'a> {
+	#[inline]
 	fn from(value: C1::T<'a>) -> Control<'a> {
 		Control::C1(value)
 	}
 }
 
 impl<'a> From<DEC::T<'a>> for Control<'a> {
+	#[inline]
 	fn from(value: DEC::T<'a>) -> Control<'a> {
 		Control::DEC(value)
 	}
 }
 
 impl<'a> From<CSI::T> for Control<'a> {
+	#[inline]
 	fn from(value: CSI::T) -> Control<'a> {
 		Control::C1(C1::ControlSequence(value))
 	}
 }
 
 impl<'a> From<SGR::T> for Control<'a> {
+	#[inline]
 	fn from(value: SGR::T) -> Control<'a> {
 		Control::C1(C1::ControlSequence(CSI::SelectGraphicalRendition(small_vec![value])))
 	}
 }
 
 impl<'a> From<SmallVec<[SGR::T; CSI::SIZE]>> for Control<'a> {
+	#[inline]
 	fn from(value: SmallVec<[SGR::T; CSI::SIZE]>) -> Control<'a> {
 		Control::C1(C1::ControlSequence(CSI::SelectGraphicalRendition(value)))
 	}
 }
 
 impl<'a> Format for Control<'a> {
+	#[inline]
 	fn fmt<W: Write>(&self, f: W, wide: bool) -> io::Result<()> {
 		match self {
 			&Control::C0(ref value) =>
@@ -128,6 +135,15 @@ named!(control<Control>,
 				}
 				else {
 					Control::C1(C1::ControlSequence(CSI::Private(id, modifier, args)))
+				}
+			}
+
+			C1::DeviceControlString(string) => {
+				if let IResult::Done(rest, header) = DEC::SIXEL::header(string.as_bytes()) {
+					Control::DEC(DEC::Sixel(header, rest))
+				}
+				else {
+					Control::C1(C1::DeviceControlString(string))
 				}
 			}
 

@@ -439,10 +439,10 @@ named!(normal<CSI>,
 
 		(res)));
 
-named!(parameters<SmallVec<[Option<u32>; SIZE]> >,
+named!(pub parameters<SmallVec<[Option<u32>; SIZE]> >,
 	many0!(SIZE, parameter));
 
-named!(parameter<Option<u32> >,
+named!(pub parameter<Option<u32> >,
 	alt!(
 		char!(';') => { |_| None } |
 		do_parse!(
@@ -773,7 +773,7 @@ with_args!(VPR<1, args> -> CSI,
 pub mod shim {
 	pub use super::CSI as T;
 	pub use super::CSI::*;
-	pub use super::{parse, SIZE};
+	pub use super::{parse, parameters, parameter, SIZE};
 	pub use super::{Erase, TabulationControl, Tabulation, Qualification, Combination, Copy};
 	pub use super::{Expansion, Parallel, Disposition, Mode, Direction, Unit, Report};
 }

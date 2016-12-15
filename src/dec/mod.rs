@@ -43,11 +43,12 @@ pub enum DEC<'a> {
 	EightBits,
 	DefineFunctionKey(u8, &'a str),
 	Unicode(bool),
+	Sixel(sixel::Header, &'a [u8]),
 
 	ScrollRegion {
 		top:    u32,
 		bottom: Option<u32>,
-	}
+	},
 }
 
 use self::DEC::*;
@@ -195,6 +196,9 @@ impl<'a> Format for DEC<'a> {
 
 			ScrollRegion { top, bottom } =>
 				write!(csi Unknown(b'r', None, small_vec![Some(top + 1), bottom.map(|v| v + 1)])),
+
+			Sixel { .. } =>
+				unimplemented!()
 		}
 
 		Ok(())
@@ -360,12 +364,14 @@ named!(SCS<Charset>,
 			b"3" => value!(charset::NRCS::SCS.into()))));
 
 pub mod csi;
+pub mod sixel;
 
 pub mod shim {
 	pub use super::DEC as T;
 	pub use super::DEC::*;
 	pub use super::parse;
 	pub use super::csi as CSI;
+	pub use super::sixel::shim as SIXEL;
 	pub use super::{Mode, Charset, Half};
 	pub use super::charset;
 }
