@@ -56,12 +56,25 @@ use self::DEC::*;
 impl<'a> Format for DEC<'a> {
 	fn fmt<W: Write>(&self, mut f: W, wide: bool) -> io::Result<()> {
 		macro_rules! write {
-			($string:expr) => (
-				try!(f.write_all($string));
+			(csi $($value:tt)*) => (
+				try!(CSI::$($value)*.fmt(f.by_ref(), wide));
 			);
 
-			(csi $($value:tt)*) => (
-				try!(CSI::$($value)*.fmt(f, wide));
+			(fmt $($value:tt)*) => (
+				try!($($value)*.fmt(f.by_ref(), wide));
+			);
+
+			(code $code:expr) => (
+				if wide {
+					try!(f.write_all(&[0x1B, $code - 0x40]));
+				}
+				else {
+					try!(f.write_all(&[$code]));
+				}
+			);
+
+			($string:expr) => (
+				try!(f.write_all($string));
 			);
 		}
 
@@ -197,8 +210,12 @@ impl<'a> Format for DEC<'a> {
 			ScrollRegion { top, bottom } =>
 				write!(csi Unknown(b'r', None, small_vec![Some(top + 1), bottom.map(|v| v + 1)])),
 
-			Sixel { .. } =>
-				unimplemented!()
+			Sixel(header, content) => {
+				write!(code 0x90);
+				write!(fmt header);
+				write!(content);
+				write!(code 0x9C);
+			}
 		}
 
 		Ok(())

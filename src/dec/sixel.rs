@@ -12,9 +12,24 @@
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
+use std::io::{self, Write};
 use nom::{self, IResult, Needed};
-use bit_vec::BitVec;
-use CSI::parameters;
+use {Format, CSI};
+
+#[derive(Eq, PartialEq, Copy, Clone, Debug, Default)]
+pub struct Map(pub u8);
+
+impl Map {
+	pub fn get(&self, index: u8) -> bool {
+		self.0 >> index as u8 & 0xf == 1
+	}
+}
+
+impl Format for Map {
+	fn fmt<W: Write>(&self, mut f: W, _wide: bool) -> io::Result<()> {
+		f.write_all(&[self.0 + 0x3F])
+	}
+}
 
 #[derive(Eq, PartialEq, Copy, Clone, Debug)]
 pub struct Header {
@@ -25,7 +40,7 @@ pub struct Header {
 
 named!(pub header<Header>,
 	do_parse!(
-		args: parameters >>
+		args: call!(CSI::parameters) >>
 		char!('q') >>
 
 		(Header {
@@ -45,10 +60,37 @@ named!(pub header<Header>,
 			grid: arg!(args[2])
 		})));
 
+impl Format for Header {
+	fn fmt<W: Write>(&self, mut f: W, _wide: bool) -> io::Result<()> {
+		if self.aspect != (2, 1) {
+			try!(f.write_all(&[match self.aspect {
+				(5, 1) => b'2',
+				(3, 1) => b'3',
+				(1, 1) => b'9',
+				_      => b'0',
+			}]));
+		}
+
+		if !self.background {
+			try!(f.write_all(b";1"));
+		}
+
+		if let Some(grid) = self.grid {
+			if self.background {
+				try!(f.write_all(b";"));
+			}
+
+			try!(write!(f, "{}", grid));
+		}
+
+		f.write_all(b"q")
+	}
+}
+
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub enum Sixel {
-	Value(BitVec),
-	Repeat(u32, BitVec),
+	Value(Map),
+	Repeat(u32, Map),
 
 	Raster {
 		aspect: (u32, u32),
@@ -67,6 +109,54 @@ pub enum Register {
 	Hsl(u8, u8, u8),
 }
 
+impl Format for Sixel {
+	fn fmt<W: Write>(&self, mut f: W, wide: bool) -> io::Result<()> {
+		match *self {
+			Sixel::Value(value) => {
+				try!(value.fmt(f.by_ref(), wide));
+			}
+
+			Sixel::Repeat(times, value) => {
+				try!(write!(f, "!{}", times));
+				try!(f.write_all(&[value.0 + 0x3F]));
+				try!(value.fmt(f.by_ref(), wide));
+			}
+
+			Sixel::Raster { aspect, size } => {
+				try!(write!(f, "\"{};{};{};{}", aspect.0, aspect.1, size.0, size.1));
+			}
+
+			Sixel::Color(id) => {
+				try!(write!(f, "#{}", id));
+			}
+
+			Sixel::Define(id, color) => {
+				try!(write!(f, "#{};", id));
+
+				match color {
+					Register::Rgb(r, g, b) => {
+						try!(write!(f, "2;{};{};{}", r, g, b));
+					}
+
+					Register::Hsl(h, s, l) => {
+						try!(write!(f, "1;{};{};{}", h, s, l));
+					}
+				}
+			}
+
+			Sixel::CarriageReturn => {
+				try!(f.write_all(b"$"));
+			}
+
+			Sixel::LineFeed => {
+				try!(f.write_all(b"-"));
+			}
+		}
+
+		Ok(())
+	}
+}
+
 #[inline]
 pub fn parse(i: &[u8]) -> IResult<&[u8], Sixel> {
 	if let IResult::Done(rest, value) = value(i) {
@@ -80,7 +170,7 @@ pub fn parse(i: &[u8]) -> IResult<&[u8], Sixel> {
 named!(inner<Sixel>,
 	alt!(repeat | raster | color | cr | lf));
 
-fn value(i: &[u8]) -> IResult<&[u8], BitVec> {
+fn value(i: &[u8]) -> IResult<&[u8], Map> {
 	const TABLE: [u8; 256] = [
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -105,10 +195,7 @@ fn value(i: &[u8]) -> IResult<&[u8], BitVec> {
 	}
 
 	if TABLE[i[0] as usize] == 1 {
-		let mut value = BitVec::from_bytes(&[(i[0] - 0x3F) << 2]);
-		value.truncate(6);
-
-		IResult::Done(&i[1..], value)
+		IResult::Done(&i[1..], Map(i[0] - 0x3F))
 	}
 	else {
 		IResult::Error(nom::ErrorKind::Custom(0))
@@ -118,7 +205,7 @@ fn value(i: &[u8]) -> IResult<&[u8], BitVec> {
 named!(repeat<Sixel>,
 	do_parse!(
 		char!('!') >>
-		args:  parameters >>
+		args:  call!(CSI::parameters) >>
 		value: value >>
 
 		(Sixel::Repeat(arg!(args[0] => 1), value))));
@@ -126,7 +213,7 @@ named!(repeat<Sixel>,
 named!(raster<Sixel>,
 	do_parse!(
 		char!('"') >>
-		args: parameters >>
+		args: call!(CSI::parameters) >>
 
 		(Sixel::Raster {
 			aspect: (arg!(args[0] => 0), arg!(args[1] => 0)),
@@ -136,7 +223,7 @@ named!(raster<Sixel>,
 named!(color<Sixel>,
 	do_parse!(
 		char!('#') >>
-		args: parameters >>
+		args: call!(CSI::parameters) >>
 		
 		(if args.len() == 1 {
 			Sixel::Color(arg!(args[0] => 0))
@@ -157,14 +244,13 @@ named!(lf<Sixel>,
 pub mod shim {
 	pub use super::Sixel as T;
 	pub use super::Sixel::*;
-	pub use super::Header;
+	pub use super::{Header, Map};
 	pub use super::{parse, header};
 }
 
 #[cfg(test)]
 mod test {
 	mod parse {
-		use bit_vec::BitVec;
 		use DEC::SIXEL::{self, parse, header};
 
 		macro_rules! test {
@@ -225,10 +311,10 @@ mod test {
 		#[test]
 		fn value() {
 			test!(b"?" =>
-				SIXEL::Value(BitVec::from_elem(6, false)));
+				SIXEL::Value(SIXEL::Map(0b000000)));
 
 			test!(b"~" =>
-				SIXEL::Value(BitVec::from_elem(6, true)));
+				SIXEL::Value(SIXEL::Map(0b111111)));
 		}
 	}
 }

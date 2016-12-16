@@ -12,4 +12,3 @@ keywords    = ["ecma48", "iso6429", "control"]
 [dependencies]
 nom      = "2.0"
 smallvec = "0.2"
-bit-vec  = "0.4"

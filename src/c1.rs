@@ -67,19 +67,6 @@ impl<'a> Format for C1<'a> {
 			);
 		}
 
-		macro_rules! string {
-			($string:expr) => (
-				try!(f.write_all($string.as_bytes()));
-
-				if wide {
-					try!(f.write_all(&[0x1B, 0x9C - 0x40]));
-				}
-				else {
-					try!(f.write_all(&[0x9C]));
-				}
-			)
-		}
-
 		match *self {
 			PaddingCharacter =>
 				write!(0x80),
@@ -131,7 +118,8 @@ impl<'a> Format for C1<'a> {
 
 			DeviceControlString(string) => {
 				write!(0x90);
-				string!(string);
+				try!(f.write_all(string.as_bytes()));
+				write!(0x9C);
 			}
 
 			PrivateUseOne =>
@@ -157,7 +145,8 @@ impl<'a> Format for C1<'a> {
 
 			String(string) => {
 				write!(0x98);
-				string!(string);
+				try!(f.write_all(string.as_bytes()));
+				write!(0x9C);
 			}
 
 			SingleGraphicCharacter =>
@@ -165,7 +154,8 @@ impl<'a> Format for C1<'a> {
 
 			SingleCharacter(string) => {
 				write!(0x9A);
-				string!(string);
+				try!(f.write_all(string.as_bytes()));
+				write!(0x9C);
 			}
 
 			ControlSequence(ref value) => {
@@ -174,17 +164,20 @@ impl<'a> Format for C1<'a> {
 
 			OperatingSystemCommand(string) => {
 				write!(0x9D);
-				string!(string);
+				try!(f.write_all(string.as_bytes()));
+				write!(0x9C);
 			}
 
 			PrivacyMessage(string) => {
 				write!(0x9E);
-				string!(string);
+				try!(f.write_all(string.as_bytes()));
+				write!(0x9C);
 			}
 
 			ApplicationProgramCommand(string) => {
 				write!(0x9F);
-				string!(string);
+				try!(f.write_all(string.as_bytes()));
+				write!(0x9C);
 			}
 		}
 
