@@ -21,7 +21,7 @@ pub struct Map(pub u8);
 
 impl Map {
 	pub fn get(&self, index: u8) -> bool {
-		self.0 >> index as u8 & 0xf == 1
+		self.0 >> index as u8 & 1 == 1
 	}
 }
 
@@ -33,7 +33,7 @@ impl Format for Map {
 
 #[derive(Eq, PartialEq, Copy, Clone, Debug)]
 pub struct Header {
-	pub aspect:     (u8, u8),
+	pub aspect:     (u32, u32),
 	pub background: bool,
 	pub grid:       Option<u32>,
 }
@@ -45,11 +45,12 @@ named!(pub header<Header>,
 
 		(Header {
 			aspect: match arg!(args[0] => 0) {
+				1         => (2, 1),
 				2         => (5, 1),
 				3 | 4     => (3, 1),
 				5 | 6     => (2, 1),
 				7 | 8 | 9 => (1, 1),
-				0 | 1 | _ => (2, 1),
+				_         => (2, 1),
 			},
 
 			background: match arg!(args[1] => 1) {
@@ -97,16 +98,17 @@ pub enum Sixel {
 		size:   (u32, u32),
 	},
 
-	Color(u32),
-	Define(u32, Register),
+	Enable(u32),
+	Define(u32, Color),
 	CarriageReturn,
 	LineFeed,
 }
 
 #[derive(Eq, PartialEq, Copy, Clone, Debug)]
-pub enum Register {
+pub enum Color {
+	Hsl(u16, u8, u8),
 	Rgb(u8, u8, u8),
-	Hsl(u8, u8, u8),
+	Rgba(u8, u8, u8, u8),
 }
 
 impl Format for Sixel {
@@ -126,7 +128,7 @@ impl Format for Sixel {
 				try!(write!(f, "\"{};{};{};{}", aspect.0, aspect.1, size.0, size.1));
 			}
 
-			Sixel::Color(id) => {
+			Sixel::Enable(id) => {
 				try!(write!(f, "#{}", id));
 			}
 
@@ -134,12 +136,19 @@ impl Format for Sixel {
 				try!(write!(f, "#{};", id));
 
 				match color {
-					Register::Rgb(r, g, b) => {
-						try!(write!(f, "2;{};{};{}", r, g, b));
+					Color::Hsl(h, s, l) => {
+						try!(write!(f, "1;{};{};{}", h, s, l));
 					}
 
-					Register::Hsl(h, s, l) => {
-						try!(write!(f, "1;{};{};{}", h, s, l));
+					Color::Rgb(r, g, b) => {
+						try!(write!(f, "2;{};{};{}",
+							(r as f32 / 255.0 * 100.0) as u8,
+							(g as f32 / 255.0 * 100.0) as u8,
+							(b as f32 / 255.0 * 100.0) as u8));
+					}
+
+					Color::Rgba(r, g, b, a) => {
+						try!(write!(f, "3;{};{};{};{}", r, g, b, a));
 					}
 				}
 			}
@@ -226,12 +235,31 @@ named!(color<Sixel>,
 		args: call!(CSI::parameters) >>
 		
 		(if args.len() == 1 {
-			Sixel::Color(arg!(args[0] => 0))
+			Sixel::Enable(arg!(args[0] => 0))
 		}
 		else {
 			Sixel::Define(arg!(args[0] => 0), match arg!(args[1] => 0) {
-				1     => Register::Hsl(arg!(args[2] => 0) as u8, arg!(args[3] => 0) as u8, arg!(args[4] => 0) as u8),
-				2 | _ => Register::Rgb(arg!(args[2] => 0) as u8, arg!(args[3] => 0) as u8, arg!(args[4] => 0) as u8),
+				1 =>
+					Color::Hsl(
+						arg!(args[2] => 0) as u16,
+						arg!(args[3] => 0) as u8,
+						arg!(args[4] => 0) as u8),
+
+				2 =>
+					Color::Rgb(
+						(arg!(args[2] => 0) as f32 / 100.0 * 255.0) as u8,
+						(arg!(args[3] => 0) as f32 / 100.0 * 255.0) as u8,
+						(arg!(args[4] => 0) as f32 / 100.0 * 255.0) as u8),
+
+				4 =>
+					Color::Rgba(
+						arg!(args[2] => 0) as u8,
+						arg!(args[3] => 0) as u8,
+						arg!(args[4] => 0) as u8,
+						arg!(args[5] => 0) as u8),
+
+				_ =>
+					Color::Rgb(0, 0, 0),
 			})
 		})));
 
@@ -244,7 +272,7 @@ named!(lf<Sixel>,
 pub mod shim {
 	pub use super::Sixel as T;
 	pub use super::Sixel::*;
-	pub use super::{Header, Map};
+	pub use super::{Header, Map, Color};
 	pub use super::{parse, header};
 }
 
