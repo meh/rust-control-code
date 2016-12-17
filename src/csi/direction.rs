@@ -21,6 +21,7 @@ pub enum Direction {
 }
 
 impl Direction {
+	#[inline]
 	pub fn parse<'a>(value: u32) -> Result<Self, nom::ErrorKind> {
 		match value {
 			0 => Ok(Direction::Forward),
@@ -31,6 +32,7 @@ impl Direction {
 }
 
 impl Into<u32> for Direction {
+	#[inline]
 	fn into(self) -> u32 {
 		match self {
 			Direction::Forward  => 0,

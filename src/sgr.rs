@@ -50,6 +50,7 @@ pub enum Color {
 }
 
 impl Into<SmallVec<[u32; CSI::SIZE]>> for SGR {
+	#[inline]
 	fn into(self) -> SmallVec<[u32; CSI::SIZE]> {
 		match self {
 			Reset =>

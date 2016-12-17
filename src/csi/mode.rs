@@ -40,6 +40,7 @@ pub enum Mode {
 }
 
 impl Mode {
+	#[inline]
 	pub fn parse<'a>(value: u32) -> Result<Self, nom::ErrorKind> {
 		match value {
 			1  => Ok(Mode::GuardedAreaTransfer),
@@ -69,6 +70,7 @@ impl Mode {
 }
 
 impl Into<u32> for Mode {
+	#[inline]
 	fn into(self) -> u32 {
 		match self {
 			Mode::GuardedAreaTransfer         => 1,

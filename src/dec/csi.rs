@@ -16,6 +16,7 @@ use smallvec::SmallVec;
 use DEC::T as DEC;
 use DEC::*;
 
+#[inline]
 pub fn normal<'a>(id: u8, modifier: Option<u8>, args: &[Option<u32>]) -> Option<DEC<'a>> {
 	match (id, modifier) {
 		(b'r', None) => DECSTBM(args),
@@ -27,6 +28,7 @@ pub fn normal<'a>(id: u8, modifier: Option<u8>, args: &[Option<u32>]) -> Option<
 	}
 }
 
+#[inline]
 pub fn private<'a>(id: u8, modifier: Option<u8>, args: &[Option<u32>]) -> Option<DEC<'a>> {
 	match (id, modifier) {
 		(b'h', None) => SM(args),

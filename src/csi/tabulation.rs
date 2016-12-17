@@ -25,6 +25,7 @@ pub enum Tabulation {
 }
 
 impl Tabulation {
+	#[inline]
 	pub fn parse<'a>(value: u32) -> Result<Self, nom::ErrorKind> {
 		match value {
 			0 => Ok(Tabulation::Character),
@@ -39,6 +40,7 @@ impl Tabulation {
 }
 
 impl Into<u32> for Tabulation {
+	#[inline]
 	fn into(self) -> u32 {
 		match self {
 			Tabulation::Character     => 0,

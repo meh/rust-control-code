@@ -22,6 +22,7 @@ pub enum Erase {
 }
 
 impl Erase {
+	#[inline]
 	pub fn parse<'a>(value: u32) -> Result<Self, nom::ErrorKind> {
 		match value {
 			0 => Ok(Erase::ToEnd),
@@ -33,6 +34,7 @@ impl Erase {
 }
 
 impl Into<u32> for Erase {
+	#[inline]
 	fn into(self) -> u32 {
 		match self {
 			Erase::ToEnd   => 0,

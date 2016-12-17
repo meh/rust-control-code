@@ -22,6 +22,7 @@ pub enum Combination {
 }
 
 impl Combination {
+	#[inline]
 	pub fn parse<'a>(value: u32) -> Result<Self, nom::ErrorKind> {
 		match value {
 			0 => Ok(Combination::Next),
@@ -33,6 +34,7 @@ impl Combination {
 }
 
 impl Into<u32> for Combination {
+	#[inline]
 	fn into(self) -> u32 {
 		match self {
 			Combination::Next  => 0,

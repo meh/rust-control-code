@@ -28,6 +28,7 @@ pub enum Unit {
 }
 
 impl Unit {
+	#[inline]
 	pub fn parse<'a>(value: u32) -> Result<Self, nom::ErrorKind> {
 		match value {
 			0 => Ok(Unit::Character),
@@ -45,6 +46,7 @@ impl Unit {
 }
 
 impl Into<u32> for Unit {
+	#[inline]
 	fn into(self) -> u32 {
 		match self {
 			Unit::Character          => 0,

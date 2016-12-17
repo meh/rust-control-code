@@ -22,6 +22,7 @@ pub enum Expansion {
 }
 
 impl Expansion {
+	#[inline]
 	pub fn parse<'a>(value: u32) -> Result<Self, nom::ErrorKind> {
 		match value {
 			0 => Ok(Expansion::Normal),
@@ -33,6 +34,7 @@ impl Expansion {
 }
 
 impl Into<u32> for Expansion {
+	#[inline]
 	fn into(self) -> u32 {
 		match self {
 			Expansion::Normal    => 0,

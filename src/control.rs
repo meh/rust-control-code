@@ -84,6 +84,7 @@ impl<'a> Format for Control<'a> {
 }
 
 /// Parse a control code.
+#[inline]
 pub fn parse(i: &[u8]) -> IResult<&[u8], Control> {
 	const TABLE: [u8; 256] = [
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,

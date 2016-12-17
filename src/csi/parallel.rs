@@ -25,6 +25,7 @@ pub enum Parallel {
 }
 
 impl Parallel {
+	#[inline]
 	pub fn parse<'a>(value: u32) -> Result<Self, nom::ErrorKind> {
 		match value {
 			0 => Ok(Parallel::End),
@@ -40,6 +41,7 @@ impl Parallel {
 
 
 impl Into<u32> for Parallel {
+	#[inline]
 	fn into(self) -> u32 {
 		match self {
 			Parallel::End                   => 0,

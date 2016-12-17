@@ -27,6 +27,7 @@ pub enum Copy {
 }
 
 impl Copy {
+	#[inline]
 	pub fn parse<'a>(value: u32) -> Result<Self, nom::ErrorKind> {
 		match value {
 			0 => Ok(Copy::ToPrimary),
@@ -43,6 +44,7 @@ impl Copy {
 }
 
 impl Into<u32> for Copy {
+	#[inline]
 	fn into(self) -> u32 {
 		match self {
 			Copy::ToPrimary      => 0,

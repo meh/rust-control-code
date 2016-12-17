@@ -20,12 +20,14 @@ use {Format, CSI};
 pub struct Map(pub u8);
 
 impl Map {
+	#[inline]
 	pub fn get(&self, index: u8) -> bool {
 		self.0 >> index as u8 & 1 == 1
 	}
 }
 
 impl Format for Map {
+	#[inline]
 	fn fmt<W: Write>(&self, mut f: W, _wide: bool) -> io::Result<()> {
 		f.write_all(&[self.0 + 0x3F])
 	}
@@ -291,7 +293,6 @@ mod test {
 				assert_eq!($item,
 					$ident($string).unwrap().1);
 			);
-
 		}
 
 		#[test]

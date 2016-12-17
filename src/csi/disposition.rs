@@ -26,6 +26,7 @@ pub enum Disposition {
 }
 
 impl Disposition {
+	#[inline]
 	pub fn parse<'a>(value: u32) -> Result<Self, nom::ErrorKind> {
 		match value {
 			0 => Ok(Disposition::ToHome),
@@ -41,6 +42,7 @@ impl Disposition {
 }
 
 impl Into<u32> for Disposition {
+	#[inline]
 	fn into(self) -> u32 {
 		match self {
 			Disposition::ToHome            => 0,

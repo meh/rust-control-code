@@ -20,6 +20,7 @@ pub enum Report {
 }
 
 impl Report {
+	#[inline]
 	pub fn parse<'a>(value: u32) -> Result<Self, nom::ErrorKind> {
 		match value {
 			6 => Ok(Report::CursorPosition),
@@ -29,6 +30,7 @@ impl Report {
 }
 
 impl Into<u32> for Report {
+	#[inline]
 	fn into(self) -> u32 {
 		match self {
 			Report::CursorPosition => 6,

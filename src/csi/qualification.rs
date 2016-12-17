@@ -31,6 +31,7 @@ pub enum Qualification {
 }
 
 impl Qualification {
+	#[inline]
 	pub fn parse<'a>(value: u32) -> Result<Self, nom::ErrorKind> {
 		match value {
 			0  => Ok(Qualification::UnprotectedUnguarded),
@@ -51,6 +52,7 @@ impl Qualification {
 }
 
 impl Into<u32> for Qualification {
+	#[inline]
 	fn into(self) -> u32 {
 		match self {
 			Qualification::UnprotectedUnguarded  => 0,
