@@ -17,6 +17,7 @@ use nom;
 #[derive(Eq, PartialEq, Copy, Clone, Debug)]
 pub enum Report {
 	CursorPosition,
+	Private(u32),
 }
 
 impl Report {
@@ -24,7 +25,7 @@ impl Report {
 	pub fn parse<'a>(value: u32) -> Result<Self, nom::ErrorKind> {
 		match value {
 			6 => Ok(Report::CursorPosition),
-			_ => Err(nom::ErrorKind::Custom(9008)),
+			n => Ok(Report::Private(value)),
 		}
 	}
 }
@@ -34,6 +35,7 @@ impl Into<u32> for Report {
 	fn into(self) -> u32 {
 		match self {
 			Report::CursorPosition => 6,
+			Report::Private(n)     => n,
 		}
 	}
 }
