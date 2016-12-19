@@ -25,7 +25,7 @@ impl Report {
 	pub fn parse<'a>(value: u32) -> Result<Self, nom::ErrorKind> {
 		match value {
 			6 => Ok(Report::CursorPosition),
-			n => Ok(Report::Private(value)),
+			n => Ok(Report::Private(n)),
 		}
 	}
 }
