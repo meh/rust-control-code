@@ -94,6 +94,21 @@ pub enum CSI {
 
 use self::CSI::*;
 
+
+#[inline]
+pub fn args<'a, T: 'a, I>(values: I) -> SmallVec<[Option<u32>; SIZE]>
+	where T: Clone + Into<Option<u32>>,
+	      I: IntoIterator<Item = &'a T>
+{
+	let mut result = SmallVec::new();
+
+	for value in values.into_iter() {
+		result.push(value.clone().into());
+	}
+
+	result
+}
+
 impl Format for CSI {
 	fn fmt<W: Write>(&self, mut f: W, wide: bool) -> io::Result<()> {
 		macro_rules! write {
@@ -773,7 +788,7 @@ with_args!(VPR<1, args> -> CSI,
 pub mod shim {
 	pub use super::CSI as T;
 	pub use super::CSI::*;
-	pub use super::{parse, parameters, parameter, SIZE};
+	pub use super::{args, parse, parameters, parameter, SIZE};
 	pub use super::{Erase, TabulationControl, Tabulation, Qualification, Combination, Copy};
 	pub use super::{Expansion, Parallel, Disposition, Mode, Direction, Unit, Report};
 }
