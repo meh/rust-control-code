@@ -1,13 +1,13 @@
 [package]
 name    = "control-code"
-version = "0.5.3"
+version = "0.5.4"
 
 authors = ["meh. <meh@schizofreni.co>"]
 license = "WTFPL"
 
 description = "Control code parser and formatter."
 repository  = "https://github.com/meh/rust-control-code"
-keywords    = ["ecma48", "iso6429", "control"]
+keywords    = ["ecma48", "iso6429", "control", "dec", "sixel"]
 
 [dependencies]
 nom      = "2.0"
