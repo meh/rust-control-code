@@ -137,7 +137,6 @@ impl Format for Sixel {
 
 			Sixel::Repeat(times, value) => {
 				try!(write!(f, "!{}", times));
-				try!(f.write_all(&[value.0 + 0x3F]));
 				try!(value.fmt(f.by_ref(), wide));
 			}
 
@@ -373,6 +372,22 @@ mod test {
 
 			map.set(1, true);
 			assert_eq!(SIXEL::Map(2), map);
+		}
+	}
+
+	mod format {
+		use DEC::SIXEL::{self, parse};
+		use format;
+
+		macro_rules! test {
+			($code:expr) => (
+				assert_eq!($code, parse(&format(&$code, true)).unwrap().1);
+			);
+		}
+
+		#[test]
+		fn repeat() {
+			test!(SIXEL::Repeat(4, SIXEL::Map::default()));
 		}
 	}
 }
