@@ -267,7 +267,7 @@ named!(color<Sixel>,
 						(arg!(args[3] => 0) as f32 / 100.0 * 255.0) as u8,
 						(arg!(args[4] => 0) as f32 / 100.0 * 255.0) as u8),
 
-				4 =>
+				3 =>
 					Color::Rgba(
 						arg!(args[2] => 0) as u8,
 						arg!(args[3] => 0) as u8,
