@@ -21,8 +21,23 @@ pub struct Map(pub u8);
 
 impl Map {
 	#[inline]
+	pub fn is_empty(&self) -> bool {
+		self.0 == 0
+	}
+
+	#[inline]
 	pub fn get(&self, index: u8) -> bool {
-		self.0 >> index as u8 & 1 == 1
+		self.0 >> index & 1 == 1
+	}
+
+	#[inline]
+	pub fn set(&mut self, index: u8, value: bool) {
+		if value {
+			self.0 |= 1 << index;
+		}
+		else {
+			self.0 &= !(1 << index);
+		}
 	}
 }
 
@@ -344,6 +359,20 @@ mod test {
 
 			test!(b"~" =>
 				SIXEL::Value(SIXEL::Map(0b111111)));
+		}
+
+		#[test]
+		fn map() {
+			let mut map = SIXEL::Map::default();
+
+			map.set(0, true);
+			assert_eq!(SIXEL::Map(1), map);
+
+			map.set(0, false);
+			assert_eq!(SIXEL::Map(0), map);
+
+			map.set(1, true);
+			assert_eq!(SIXEL::Map(2), map);
 		}
 	}
 }
