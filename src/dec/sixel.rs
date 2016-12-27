@@ -153,7 +153,7 @@ impl Format for Sixel {
 
 				match color {
 					Color::Hsl(h, s, l) => {
-						try!(write!(f, "1;{};{};{}", h, s, l));
+						try!(write!(f, "1;{};{};{}", h, l, s));
 					}
 
 					Color::Rgb(r, g, b) => {
@@ -258,8 +258,8 @@ named!(color<Sixel>,
 				1 =>
 					Color::Hsl(
 						arg!(args[2] => 0) as u16,
-						arg!(args[3] => 0) as u8,
-						arg!(args[4] => 0) as u8),
+						arg!(args[4] => 0) as u8,
+						arg!(args[3] => 0) as u8),
 
 				2 =>
 					Color::Rgb(
