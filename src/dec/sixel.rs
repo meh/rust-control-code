@@ -248,9 +248,9 @@ named!(raster<Sixel>,
 named!(color<Sixel>,
 	do_parse!(
 		char!('#') >>
+		id: digit >>
 
-		id:    digit >>
-		color: opt!(complete!(switch!(take!(3),
+		color: opt!(switch!(take!(3),
 			b";1;" => do_parse!(
 				h: digit >>
 				char!(';') >>
@@ -281,7 +281,7 @@ named!(color<Sixel>,
 				char!(';') >>
 				a: digit >>
 
-				(Color::Rgba(number(r) as u8, number(g) as u8, number(b) as u8, number(a) as u8)))))) >>
+				(Color::Rgba(number(r) as u8, number(g) as u8, number(b) as u8, number(a) as u8))))) >>
 
 		(if let Some(color) = color {
 			Sixel::Define(number(id), color)
