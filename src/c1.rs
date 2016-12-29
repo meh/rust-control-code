@@ -14,6 +14,7 @@
 
 use std::io::{self, Write};
 use std::str;
+use nom::IResult;
 use {Format};
 
 #[derive(Eq, PartialEq, Clone, Debug)]
@@ -34,7 +35,7 @@ pub enum C1<'a> {
 	ReverseIndex,
 	SingleShiftTwo,
 	SingleShiftThree,
-	DeviceControlString(&'a str),
+	DeviceControl,
 	PrivateUseOne,
 	PrivateUseTwo,
 	SetTransmitState,
@@ -116,10 +117,8 @@ impl<'a> Format for C1<'a> {
 			SingleShiftThree =>
 				write!(0x8F),
 
-			DeviceControlString(string) => {
+			DeviceControl => {
 				write!(0x90);
-				try!(f.write_all(string.as_bytes()));
-				write!(0x9C);
 			}
 
 			PrivateUseOne =>
@@ -310,7 +309,7 @@ named!(SS3<C1>,
 	value!(SingleShiftThree));
 
 named!(DCS<C1>,
-	map!(string, |s| DeviceControlString(s)));
+	value!(DeviceControl));
 
 named!(PU1<C1>,
 	value!(PrivateUseOne));
@@ -357,18 +356,43 @@ named!(PM<C1>,
 named!(APC<C1>,
 	map!(string, |s| ApplicationProgramCommand(s)));
 
-named!(string<&str>,
+named!(pub string<&str>,
 	map!(terminated!(take_while!(is_string), alt!(ST | tag!(b"\x07"))),
 		|s| unsafe { str::from_utf8_unchecked(s) }));
 
-fn is_string(b: u8) -> bool {
-	(b >= 0x08 && b <= 0x0D) || (b >= 0x20 && b <= 0x7E)
+#[inline]
+pub fn is_string(c: u8) -> bool {
+	const TABLE: [u8; 256] = [
+		0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	];
+
+	TABLE[c as usize] == 1
+}
+
+#[inline]
+pub fn is_end(i: &[u8]) -> IResult<&[u8], ()> {
+	value!(i, (), alt!(ST | tag!(b"\x07")))
 }
 
 pub mod shim {
 	pub use super::C1 as T;
 	pub use super::C1::*;
-	pub use super::parse;
+	pub use super::{parse, string, is_string, is_end};
 }
 
 #[cfg(test)]
@@ -529,11 +553,11 @@ mod test {
 
 		#[test]
 		fn dcs() {
-			test!(b"\x90foo\x9C" =>
-				C1::DeviceControlString("foo"));
+			test!(b"\x90" =>
+				C1::DeviceControl);
 
-			test!(b"\x1B\x50foo\x1B\x5C" =>
-				C1::DeviceControlString("foo"));
+			test!(b"\x1B\x50" =>
+				C1::DeviceControl);
 		}
 
 		#[test]
@@ -730,7 +754,7 @@ mod test {
 
 		#[test]
 		fn dcs() {
-			test!(C1::DeviceControlString("foo"));
+			test!(C1::DeviceControl);
 		}
 
 		#[test]

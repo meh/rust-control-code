@@ -43,7 +43,6 @@ pub enum DEC<'a> {
 	EightBits,
 	DefineFunctionKey(u8, &'a str),
 	Unicode(bool),
-	Sixel(sixel::Header, &'a [u8]),
 
 	ScrollRegion {
 		top:    u32,
@@ -209,13 +208,6 @@ impl<'a> Format for DEC<'a> {
 
 			ScrollRegion { top, bottom } =>
 				write!(csi Unknown(b'r', None, small_vec![Some(top + 1), bottom.map(|v| v + 1)])),
-
-			Sixel(header, content) => {
-				write!(code 0x90);
-				write!(fmt header);
-				write!(content);
-				write!(code 0x9C);
-			}
 		}
 
 		Ok(())

@@ -84,7 +84,6 @@ impl<'a> Format for Control<'a> {
 }
 
 /// Parse a control code.
-#[inline]
 pub fn parse(i: &[u8]) -> IResult<&[u8], Control> {
 	const TABLE: [u8; 256] = [
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -139,17 +138,8 @@ named!(control<Control>,
 				}
 			}
 
-			C1::DeviceControlString(string) => {
-				if let IResult::Done(rest, header) = DEC::SIXEL::header(string.as_bytes()) {
-					Control::DEC(DEC::Sixel(header, rest))
-				}
-				else {
-					Control::C1(C1::DeviceControlString(string))
-				}
-			}
-
-			_ =>
-				Control::C1(c)
+			control =>
+				Control::C1(control)
 		})
 		|
 		map!(C0::parse,  |c| Control::C0(c))));
