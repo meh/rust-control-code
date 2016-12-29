@@ -184,3 +184,18 @@ macro_rules! many0 {
 		many0!($i, $n, call!($f));
 	);
 }
+
+#[inline]
+pub fn number(i: &[u8]) -> u32 {
+	let mut n: u32 = 0;
+
+	for &ch in i {
+		let d = (ch as u32).wrapping_sub(b'0' as u32);
+
+		if d <= 9 {
+			n = n.saturating_mul(10).saturating_add(d);
+		}
+	}
+
+	n
+}

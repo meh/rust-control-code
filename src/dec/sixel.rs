@@ -13,8 +13,9 @@
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
 use std::io::{self, Write};
-use nom::{self, IResult, Needed};
+use nom::{self, IResult, Needed, digit};
 use {Format, CSI};
+use util::number;
 
 #[derive(Eq, PartialEq, Copy, Clone, Debug, Default)]
 pub struct Map(pub u8);
@@ -182,7 +183,6 @@ impl Format for Sixel {
 	}
 }
 
-#[inline]
 pub fn parse(i: &[u8]) -> IResult<&[u8], Sixel> {
 	if let IResult::Done(rest, value) = value(i) {
 		IResult::Done(rest, Sixel::Value(value))
@@ -230,10 +230,10 @@ fn value(i: &[u8]) -> IResult<&[u8], Map> {
 named!(repeat<Sixel>,
 	do_parse!(
 		char!('!') >>
-		args:  call!(CSI::parameters) >>
+		count: digit >>
 		value: value >>
 
-		(Sixel::Repeat(arg!(args[0] => 1), value))));
+		(Sixel::Repeat(number(count), value))));
 
 named!(raster<Sixel>,
 	do_parse!(
@@ -248,37 +248,48 @@ named!(raster<Sixel>,
 named!(color<Sixel>,
 	do_parse!(
 		char!('#') >>
-		args: call!(CSI::parameters) >>
-		
-		(if args.len() == 1 {
-			Sixel::Enable(arg!(args[0] => 0))
+
+		id:    digit >>
+		color: opt!(complete!(switch!(take!(3),
+			b";1;" => do_parse!(
+				h: digit >>
+				char!(';') >>
+				l: digit >>
+				char!(';') >>
+				s: digit >>
+
+				(Color::Hsl(number(h) as u16, number(s) as u8, number(l) as u8))) |
+
+			b";2;" => do_parse!(
+				r: digit >>
+				char!(';') >>
+				g: digit >>
+				char!(';') >>
+				b: digit >>
+
+				(Color::Rgb(
+					(number(r) as f32 / 100.0 * 255.0) as u8,
+					(number(g) as f32 / 100.0 * 255.0) as u8,
+					(number(b) as f32 / 100.0 * 255.0) as u8))) |
+
+			b";3;" => do_parse!(
+				r: digit >>
+				char!(';') >>
+				g: digit >>
+				char!(';') >>
+				b: digit >>
+				char!(';') >>
+				a: digit >>
+
+				(Color::Rgba(number(r) as u8, number(g) as u8, number(b) as u8, number(a) as u8)))))) >>
+
+		(if let Some(color) = color {
+			Sixel::Define(number(id), color)
 		}
 		else {
-			Sixel::Define(arg!(args[0] => 0), match arg!(args[1] => 0) {
-				1 =>
-					Color::Hsl(
-						arg!(args[2] => 0) as u16,
-						arg!(args[4] => 0) as u8,
-						arg!(args[3] => 0) as u8),
-
-				2 =>
-					Color::Rgb(
-						(arg!(args[2] => 0) as f32 / 100.0 * 255.0) as u8,
-						(arg!(args[3] => 0) as f32 / 100.0 * 255.0) as u8,
-						(arg!(args[4] => 0) as f32 / 100.0 * 255.0) as u8),
-
-				3 =>
-					Color::Rgba(
-						arg!(args[2] => 0) as u8,
-						arg!(args[3] => 0) as u8,
-						arg!(args[4] => 0) as u8,
-						arg!(args[5] => 0) as u8),
-
-				_ =>
-					Color::Rgb(0, 0, 0),
-			})
+			Sixel::Enable(number(id))
 		})));
-
+	
 named!(cr<Sixel>,
 	value!(Sixel::CarriageReturn, tag!("$")));
 

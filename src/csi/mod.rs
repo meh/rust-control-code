@@ -20,6 +20,7 @@ use nom;
 use smallvec::SmallVec;
 
 use Format;
+use util::number;
 
 pub const SIZE: usize = 8;
 
@@ -465,20 +466,6 @@ named!(pub parameter<Option<u32> >,
 			opt!(char!(';')) >>
 
 			(number)) => { |n| Some(number(n)) }));
-
-fn number(i: &[u8]) -> u32 {
-	let mut n: u32 = 0;
-
-	for &ch in i {
-		let d = (ch as u32).wrapping_sub(b'0' as u32);
-
-		if d <= 9 {
-			n = n.saturating_mul(10).saturating_add(d);
-		}
-	}
-
-	n
-}
 
 fn standard(id: char, modifier: Option<char>, args: SmallVec<[Option<u32>; SIZE]>) -> Option<CSI> {
 	match (id, modifier) {
