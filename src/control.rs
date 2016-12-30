@@ -21,7 +21,7 @@ use {Format, C0, C1, DEC, CSI, SGR};
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub enum Control<'a> {
 	C0(C0::T),
-	C1(C1::T<'a>),
+	C1(C1::T),
 	DEC(DEC::T<'a>),
 }
 
@@ -32,9 +32,9 @@ impl<'a> From<C0::T> for Control<'a> {
 	}
 }
 
-impl<'a> From<C1::T<'a>> for Control<'a> {
+impl<'a> From<C1::T> for Control<'a> {
 	#[inline]
-	fn from(value: C1::T<'a>) -> Control<'a> {
+	fn from(value: C1::T) -> Control<'a> {
 		Control::C1(value)
 	}
 }

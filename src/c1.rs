@@ -18,7 +18,7 @@ use nom::IResult;
 use {Format};
 
 #[derive(Eq, PartialEq, Clone, Debug)]
-pub enum C1<'a> {
+pub enum C1 {
 	PaddingCharacter,
 	HighOctetPreset,
 	BreakPermittedHere,
@@ -43,19 +43,19 @@ pub enum C1<'a> {
 	MessageWaiting,
 	StartProtectedArea,
 	EndProtectedArea,
-	String(&'a str),
-	// TODO: this should contain the value.
+	String,
 	SingleGraphicCharacter,
-	SingleCharacter(&'a str),
+	SingleCharacter,
 	ControlSequence(::CSI::T),
-	OperatingSystemCommand(&'a str),
-	PrivacyMessage(&'a str),
-	ApplicationProgramCommand(&'a str),
+	OperatingSystemCommand,
+	PrivacyMessage,
+	ApplicationProgramCommand,
+	End,
 }
 
 use self::C1::*;
 
-impl<'a> Format for C1<'a> {
+impl Format for C1 {
 	fn fmt<W: Write>(&self, mut f: W, wide: bool) -> io::Result<()> {
 		macro_rules! write {
 			($code:expr) => (
@@ -142,42 +142,29 @@ impl<'a> Format for C1<'a> {
 			EndProtectedArea =>
 				write!(0x97),
 
-			String(string) => {
-				write!(0x98);
-				try!(f.write_all(string.as_bytes()));
-				write!(0x9C);
-			}
+			String =>
+				write!(0x98),
 
 			SingleGraphicCharacter =>
 				write!(0x99),
 
-			SingleCharacter(string) => {
-				write!(0x9A);
-				try!(f.write_all(string.as_bytes()));
-				write!(0x9C);
-			}
+			SingleCharacter =>
+				write!(0x9A),
 
-			ControlSequence(ref value) => {
-				try!(value.fmt(f, wide));
-			}
+			ControlSequence(ref value) =>
+				try!(value.fmt(f, wide)),
 
-			OperatingSystemCommand(string) => {
-				write!(0x9D);
-				try!(f.write_all(string.as_bytes()));
-				write!(0x9C);
-			}
+			OperatingSystemCommand =>
+				write!(0x9D),
 
-			PrivacyMessage(string) => {
-				write!(0x9E);
-				try!(f.write_all(string.as_bytes()));
-				write!(0x9C);
-			}
+			PrivacyMessage =>
+				write!(0x9E),
 
-			ApplicationProgramCommand(string) => {
-				write!(0x9F);
-				try!(f.write_all(string.as_bytes()));
-				write!(0x9C);
-			}
+			ApplicationProgramCommand =>
+				write!(0x9F),
+
+			End =>
+				write!(0x9C),
 		}
 
 		Ok(())
@@ -333,13 +320,13 @@ named!(EPA<C1>,
 	value!(EndProtectedArea));
 
 named!(SOS<C1>,
-	map!(string, |s| String(s)));
+	value!(String));
 
 named!(SGCI<C1>,
 	value!(SingleGraphicCharacter));
 
 named!(SCI<C1>,
-	map!(string, |s| SingleCharacter(s)));
+	value!(SingleCharacter));
 
 named!(CSI<C1>,
 	map!(call!(::CSI::parse), |res| ControlSequence(res)));
@@ -348,13 +335,13 @@ named!(ST,
 	alt!(tag!(b"\x9C") | tag!(b"\x1B\x5C")));
 
 named!(OSC<C1>,
-	map!(string, |s| OperatingSystemCommand(s)));
+	value!(OperatingSystemCommand));
 
 named!(PM<C1>,
-	map!(string, |s| PrivacyMessage(s)));
+	value!(PrivacyMessage));
 
 named!(APC<C1>,
-	map!(string, |s| ApplicationProgramCommand(s)));
+	value!(ApplicationProgramCommand));
 
 named!(pub string<&str>,
 	map!(terminated!(take_while!(is_string), alt!(ST | tag!(b"\x07"))),
@@ -607,11 +594,11 @@ mod test {
 
 		#[test]
 		fn sos() {
-			test!(b"\x98foo\x9C" =>
-				C1::String("foo"));
+			test!(b"\x98" =>
+				C1::String);
 
-			test!(b"\x1B\x58foo\x1B\x5C" =>
-				C1::String("foo"));
+			test!(b"\x1B\x58" =>
+				C1::String);
 		}
 
 		#[test]
@@ -625,38 +612,38 @@ mod test {
 
 		#[test]
 		fn sci() {
-			test!(b"\x9Afoo\x9C" =>
-				C1::SingleCharacter("foo"));
+			test!(b"\x9A" =>
+				C1::SingleCharacter);
 
-			test!(b"\x1B\x5Afoo\x1B\x5C" =>
-				C1::SingleCharacter("foo"));
+			test!(b"\x1B\x5A" =>
+				C1::SingleCharacter);
 		}
 
 		#[test]
 		fn osc() {
-			test!(b"\x9Dfoo\x9C" =>
-				C1::OperatingSystemCommand("foo"));
+			test!(b"\x9D" =>
+				C1::OperatingSystemCommand);
 
-			test!(b"\x1B\x5Dfoo\x1B\x5C" =>
-				C1::OperatingSystemCommand("foo"));
+			test!(b"\x1B\x5D" =>
+				C1::OperatingSystemCommand);
 		}
 
 		#[test]
 		fn pn() {
-			test!(b"\x9Efoo\x9C" =>
-				C1::PrivacyMessage("foo"));
+			test!(b"\x9E" =>
+				C1::PrivacyMessage);
 
-			test!(b"\x1B\x5Efoo\x1B\x5C" =>
-				C1::PrivacyMessage("foo"));
+			test!(b"\x1B\x5E" =>
+				C1::PrivacyMessage);
 		}
 
 		#[test]
 		fn apc() {
-			test!(b"\x9Ffoo\x9C" =>
-				C1::ApplicationProgramCommand("foo"));
+			test!(b"\x9F" =>
+				C1::ApplicationProgramCommand);
 
-			test!(b"\x1B\x5Ffoo\x1B\x5C" =>
-				C1::ApplicationProgramCommand("foo"));
+			test!(b"\x1B\x5F" =>
+				C1::ApplicationProgramCommand);
 		}
 	}
 
@@ -784,7 +771,7 @@ mod test {
 
 		#[test]
 		fn sos() {
-			test!(C1::String("foo"));
+			test!(C1::String);
 		}
 
 		#[test]
@@ -794,22 +781,22 @@ mod test {
 
 		#[test]
 		fn sci() {
-			test!(C1::SingleCharacter("foo"));
+			test!(C1::SingleCharacter);
 		}
 
 		#[test]
 		fn osc() {
-			test!(C1::OperatingSystemCommand("foo"));
+			test!(C1::OperatingSystemCommand);
 		}
 
 		#[test]
 		fn pn() {
-			test!(C1::PrivacyMessage("foo"));
+			test!(C1::PrivacyMessage);
 		}
 
 		#[test]
 		fn apc() {
-			test!(C1::ApplicationProgramCommand("foo"));
+			test!(C1::ApplicationProgramCommand);
 		}
 	}
 }
