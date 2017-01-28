@@ -344,7 +344,7 @@ named!(APC<C1>,
 	value!(ApplicationProgramCommand));
 
 named!(pub string<&str>,
-	map!(terminated!(take_while!(is_string), alt!(ST | tag!(b"\x07"))),
+	map!(terminated!(take_while!(is_string), is_end),
 		|s| unsafe { str::from_utf8_unchecked(s) }));
 
 #[inline]
@@ -372,8 +372,8 @@ pub fn is_string(c: u8) -> bool {
 }
 
 #[inline]
-pub fn is_end(i: &[u8]) -> IResult<&[u8], ()> {
-	value!(i, (), alt!(ST | tag!(b"\x07")))
+pub fn is_end(i: &[u8]) -> IResult<&[u8], &[u8]> {
+	alt!(i, ST | tag!(b"\x07"))
 }
 
 pub mod shim {
