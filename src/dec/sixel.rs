@@ -193,7 +193,7 @@ pub fn parse(i: &[u8]) -> IResult<&[u8], Sixel> {
 }
 
 named!(inner<Sixel>,
-	alt!(repeat | raster | color | cr | lf));
+	alt!(repeat | color | cr | lf | raster));
 
 fn value(i: &[u8]) -> IResult<&[u8], Map> {
 	const TABLE: [u8; 256] = [
@@ -216,7 +216,7 @@ fn value(i: &[u8]) -> IResult<&[u8], Map> {
 	];
 
 	if i.is_empty() {
-		return IResult::Incomplete(Needed::Unknown);
+		return IResult::Incomplete(Needed::Size(1));
 	}
 
 	if TABLE[i[0] as usize] == 1 {
@@ -291,10 +291,10 @@ named!(color<Sixel>,
 		})));
 	
 named!(cr<Sixel>,
-	value!(Sixel::CarriageReturn, tag!("$")));
+	value!(Sixel::CarriageReturn, char!('$')));
 
 named!(lf<Sixel>,
-	value!(Sixel::LineFeed, tag!("-")));
+	value!(Sixel::LineFeed, char!('-')));
 
 pub mod shim {
 	pub use super::Sixel as T;
