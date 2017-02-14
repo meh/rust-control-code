@@ -44,7 +44,7 @@ impl Map {
 
 impl Format for Map {
 	#[inline]
-	fn fmt<W: Write>(&self, mut f: W, _wide: bool) -> io::Result<()> {
+	fn fmt<W: Write>(&self, mut f: W) -> io::Result<()> {
 		f.write_all(&[self.0 + 0x3F])
 	}
 }
@@ -80,7 +80,7 @@ named!(pub header<Header>,
 		})));
 
 impl Format for Header {
-	fn fmt<W: Write>(&self, mut f: W, _wide: bool) -> io::Result<()> {
+	fn fmt<W: Write>(&self, mut f: W) -> io::Result<()> {
 		if self.aspect != (2, 1) {
 			try!(f.write_all(&[match self.aspect {
 				(5, 1) => b'2',
@@ -130,15 +130,15 @@ pub enum Color {
 }
 
 impl Format for Sixel {
-	fn fmt<W: Write>(&self, mut f: W, wide: bool) -> io::Result<()> {
+	fn fmt<W: Write>(&self, mut f: W) -> io::Result<()> {
 		match *self {
 			Sixel::Value(value) => {
-				try!(value.fmt(f.by_ref(), wide));
+				try!(value.fmt(f.by_ref()));
 			}
 
 			Sixel::Repeat(times, value) => {
 				try!(write!(f, "!{}", times));
-				try!(value.fmt(f.by_ref(), wide));
+				try!(value.fmt(f.by_ref()));
 			}
 
 			Sixel::Raster { aspect, size } => {
@@ -392,7 +392,8 @@ mod test {
 
 		macro_rules! test {
 			($code:expr) => (
-				assert_eq!($code, parse(&format(&$code, true)).unwrap().1);
+				let item = $code;
+				assert_eq!(item, parse(&format(&item)).unwrap().1);
 			);
 		}
 

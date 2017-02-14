@@ -53,23 +53,18 @@ pub enum DEC<'a> {
 use self::DEC::*;
 
 impl<'a> Format for DEC<'a> {
-	fn fmt<W: Write>(&self, mut f: W, wide: bool) -> io::Result<()> {
+	fn fmt<W: Write>(&self, mut f: W) -> io::Result<()> {
 		macro_rules! write {
 			(csi $($value:tt)*) => (
-				try!(CSI::$($value)*.fmt(f.by_ref(), wide));
+				try!(CSI::$($value)*.fmt(f.by_ref()));
 			);
 
 			(fmt $($value:tt)*) => (
-				try!($($value)*.fmt(f.by_ref(), wide));
+				try!($($value)*.fmt(f.by_ref()));
 			);
 
 			(code $code:expr) => (
-				if wide {
-					try!(f.write_all(&[0x1B, $code - 0x40]));
-				}
-				else {
-					try!(f.write_all(&[$code]));
-				}
+				try!(f.write_all(&[0x1B, $code - 0x40]));
 			);
 
 			($string:expr) => (
@@ -554,9 +549,7 @@ mod test {
 		macro_rules! test {
 			($code:expr) => (
 				let item = Control::DEC($code);
-
-				assert_eq!(item, parse(&format(&item, true)).unwrap().1);
-				assert_eq!(item, parse(&format(&item, false)).unwrap().1);
+				assert_eq!(item, parse(&format(&item)).unwrap().1);
 			);
 		}
 

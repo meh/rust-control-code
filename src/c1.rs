@@ -56,15 +56,10 @@ pub enum C1 {
 use self::C1::*;
 
 impl Format for C1 {
-	fn fmt<W: Write>(&self, mut f: W, wide: bool) -> io::Result<()> {
+	fn fmt<W: Write>(&self, mut f: W) -> io::Result<()> {
 		macro_rules! write {
 			($code:expr) => (
-				if wide {
-					try!(f.write_all(&[0x1B, $code - 0x40]));
-				}
-				else {
-					try!(f.write_all(&[$code]));
-				}
+				try!(f.write_all(&[0x1B, $code - 0x40]));
 			);
 		}
 
@@ -152,7 +147,7 @@ impl Format for C1 {
 				write!(0x9A),
 
 			ControlSequence(ref value) =>
-				try!(value.fmt(f, wide)),
+				try!(value.fmt(f)),
 
 			OperatingSystemCommand =>
 				write!(0x9D),
@@ -653,9 +648,7 @@ mod test {
 		macro_rules! test {
 			($code:expr) => (
 				let item = Control::C1($code);
-
-				assert_eq!(item, parse(&format(&item, true)).unwrap().1);
-				assert_eq!(item, parse(&format(&item, false)).unwrap().1);
+				assert_eq!(item, parse(&format(&item)).unwrap().1);
 			);
 		}
 

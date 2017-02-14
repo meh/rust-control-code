@@ -54,7 +54,7 @@ pub enum C0 {
 use self::C0::*;
 
 impl Format for C0 {
-	fn fmt<W: Write>(&self, mut f: W, _wide: bool) -> io::Result<()> {
+	fn fmt<W: Write>(&self, mut f: W) -> io::Result<()> {
 		macro_rules! write {
 			($code:expr) => (
 				f.write_all(&[$code])
@@ -504,9 +504,7 @@ mod test {
 		macro_rules! test {
 			($code:expr) => (
 				let item = Control::C0($code);
-
-				assert_eq!(item, parse(&format(&item, true)).unwrap().1);
-				assert_eq!(item, parse(&format(&item, false)).unwrap().1);
+				assert_eq!(item, parse(&format(&item)).unwrap().1);
 			);
 		}
 

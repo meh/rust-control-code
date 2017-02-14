@@ -124,15 +124,10 @@ pub fn values<'a, T: 'a, O, I>(values: I) -> SmallVec<[O; SIZE]>
 }
 
 impl Format for CSI {
-	fn fmt<W: Write>(&self, mut f: W, wide: bool) -> io::Result<()> {
+	fn fmt<W: Write>(&self, mut f: W) -> io::Result<()> {
 		macro_rules! write {
 			(entry $private:expr) => ({
-				if wide {
-					try!(f.write_all(b"\x1B\x5B"));
-				}
-				else {
-					try!(f.write_all(b"\x9B"));
-				}
+				try!(f.write_all(b"\x1B\x5B"));
 
 				if $private {
 					try!(f.write_all(b"?"));
@@ -1730,25 +1725,23 @@ mod test {
 		macro_rules! test {
 			($code:expr) => (
 				let item = Control::C1(C1::ControlSequence($code));
-
-				assert_eq!(item, parse(&format(&item, true)).unwrap().1);
-				assert_eq!(item, parse(&format(&item, false)).unwrap().1);
+				assert_eq!(item, parse(&format(&item)).unwrap().1);
 			);
 		}
 
 		#[test]
 		fn parameters() {
-			assert_eq!(&b"\x9B1;~"[..],
+			assert_eq!(&b"\x1B[1;~"[..],
 				&*format(&Control::C1(C1::ControlSequence(
-					CSI::Unknown(b'~', None, small_vec![Some(1), None]))), false));
+					CSI::Unknown(b'~', None, small_vec![Some(1), None])))));
 
-			assert_eq!(&b"\x9B;1~"[..],
+			assert_eq!(&b"\x1B[;1~"[..],
 				&*format(&Control::C1(C1::ControlSequence(
-					CSI::Unknown(b'~', None, small_vec![None, Some(1)]))), false));
+					CSI::Unknown(b'~', None, small_vec![None, Some(1)])))));
 
-			assert_eq!(&b"\x9B1;1~"[..],
+			assert_eq!(&b"\x1B[1;1~"[..],
 				&*format(&Control::C1(C1::ControlSequence(
-					CSI::Unknown(b'~', None, small_vec![Some(1), Some(1)]))), false));
+					CSI::Unknown(b'~', None, small_vec![Some(1), Some(1)])))));
 		}
 
 		#[test]

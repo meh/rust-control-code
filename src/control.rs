@@ -69,16 +69,16 @@ impl<'a> From<SmallVec<[SGR::T; CSI::SIZE]>> for Control<'a> {
 
 impl<'a> Format for Control<'a> {
 	#[inline]
-	fn fmt<W: Write>(&self, f: W, wide: bool) -> io::Result<()> {
+	fn fmt<W: Write>(&self, f: W) -> io::Result<()> {
 		match self {
 			&Control::C0(ref value) =>
-				value.fmt(f, wide),
+				value.fmt(f),
 
 			&Control::C1(ref value) =>
-				value.fmt(f, wide),
+				value.fmt(f),
 
 			&Control::DEC(ref value) =>
-				value.fmt(f, wide),
+				value.fmt(f),
 		}
 	}
 }

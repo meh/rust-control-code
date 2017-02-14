@@ -484,8 +484,7 @@ mod test {
 				let item = Control::C1(C1::ControlSequence(CSI::SelectGraphicalRendition(
 					small_vec![$($attr),*])));
 
-				assert_eq!(item, parse(&format(&item, true)).unwrap().1);
-				assert_eq!(item, parse(&format(&item, false)).unwrap().1);
+				assert_eq!(item, parse(&format(&item)).unwrap().1);
 			);
 		}
 
