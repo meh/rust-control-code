@@ -17,7 +17,7 @@ use DEC::T as DEC;
 use DEC::*;
 
 #[inline]
-pub fn normal<'a>(id: u8, modifier: Option<u8>, args: &[Option<u32>]) -> Option<DEC<'a>> {
+pub fn normal(id: u8, modifier: Option<u8>, args: &[Option<u32>]) -> Option<DEC> {
 	match (id, modifier) {
 		(b'r', None) => DECSTBM(args),
 
@@ -29,7 +29,7 @@ pub fn normal<'a>(id: u8, modifier: Option<u8>, args: &[Option<u32>]) -> Option<
 }
 
 #[inline]
-pub fn private<'a>(id: u8, modifier: Option<u8>, args: &[Option<u32>]) -> Option<DEC<'a>> {
+pub fn private(id: u8, modifier: Option<u8>, args: &[Option<u32>]) -> Option<DEC> {
 	match (id, modifier) {
 		(b'h', None) => SM(args),
 		(b'l', None) => RM(args),
@@ -41,28 +41,28 @@ pub fn private<'a>(id: u8, modifier: Option<u8>, args: &[Option<u32>]) -> Option
 	}
 }
 
-with_args!(SM<args> -> DEC<'a>, ?
+with_args!(SM<args> -> DEC, ?
 	args.iter().map(|d| d.unwrap_or(0))
 		.map(Mode::parse)
 		.collect::<Result<SmallVec<_>, _>>()
 		.map(Set));
 
-with_args!(RM<args> -> DEC<'a>, ?
+with_args!(RM<args> -> DEC, ?
 	args.iter().map(|d| d.unwrap_or(0))
 		.map(Mode::parse)
 		.collect::<Result<SmallVec<_>, _>>()
 		.map(Reset));
 
-with_args!(DECDC<1, args> -> DEC<'a>,
+with_args!(DECDC<1, args> -> DEC,
 	DeleteColumn(arg!(args[0] => 1)));
 
-with_args!(DECIC<1, args> -> DEC<'a>,
+with_args!(DECIC<1, args> -> DEC,
 	InsertColumn(arg!(args[0] => 1)));
 
-with_args!(DECSCUSR<1, args> -> DEC<'a>,
+with_args!(DECSCUSR<1, args> -> DEC,
 	CursorStyle(arg!(args[0] => 0) as u8));
 
-with_args!(DECSTBM<2, args> -> DEC<'a>,
+with_args!(DECSTBM<2, args> -> DEC,
 	ScrollRegion {
 		top:    arg!(args[0] => 1) - 1,
 		bottom: arg!(args[1])
@@ -70,7 +70,7 @@ with_args!(DECSTBM<2, args> -> DEC<'a>,
 			.map(|b| b - 1),
 	});
 
-with_args!(DECSTR -> DEC<'a>,
+with_args!(DECSTR -> DEC,
 	SoftReset);
 
 // TODO: DECCARA

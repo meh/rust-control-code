@@ -19,7 +19,7 @@ use nom;
 use {Format, CSI};
 
 #[derive(Eq, PartialEq, Clone, Debug)]
-pub enum DEC<'a> {
+pub enum DEC {
 	AlignmentTest,
 	SaveCursor,
 	RestoreCursor,
@@ -41,7 +41,7 @@ pub enum DEC<'a> {
 	ResetInitial,
 	SevenBits,
 	EightBits,
-	DefineFunctionKey(u8, &'a str),
+	DefineFunctionKey(u8, String),
 	Unicode(bool),
 
 	ScrollRegion {
@@ -52,7 +52,7 @@ pub enum DEC<'a> {
 
 use self::DEC::*;
 
-impl<'a> Format for DEC<'a> {
+impl Format for DEC {
 	fn fmt<W: Write>(&self, mut f: W) -> io::Result<()> {
 		macro_rules! write {
 			(csi $($value:tt)*) => (
@@ -189,7 +189,7 @@ impl<'a> Format for DEC<'a> {
 			EightBits =>
 				write!(b"\x1B G"),
 
-			DefineFunctionKey(key, string) => {
+			DefineFunctionKey(key, ref string) => {
 				write!(&[0x1B, b'Q', key + b'0' - 1]);
 				write!(b"'");
 				write!(string.as_bytes());
@@ -306,7 +306,7 @@ named!(SCODFK<DEC>,
 		string:    take_until!(delimiter) >>
 		tag!(delimiter) >>
 
-		(DefineFunctionKey(key, unsafe { str::from_utf8_unchecked(string) }))));
+		(DefineFunctionKey(key, unsafe { str::from_utf8_unchecked(string) }.into()))));
 
 fn is_key(i: &[u8]) -> nom::IResult<&[u8], u8> {
 	if i.is_empty() {

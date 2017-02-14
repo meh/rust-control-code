@@ -19,55 +19,55 @@ use nom::{self, IResult, Needed};
 use {Format, C0, C1, DEC, CSI, SGR};
 
 #[derive(Eq, PartialEq, Clone, Debug)]
-pub enum Control<'a> {
+pub enum Control {
 	C0(C0::T),
 	C1(C1::T),
-	DEC(DEC::T<'a>),
+	DEC(DEC::T),
 }
 
-impl<'a> From<C0::T> for Control<'a> {
+impl From<C0::T> for Control {
 	#[inline]
-	fn from(value: C0::T) -> Control<'a> {
+	fn from(value: C0::T) -> Control {
 		Control::C0(value)
 	}
 }
 
-impl<'a> From<C1::T> for Control<'a> {
+impl From<C1::T> for Control {
 	#[inline]
-	fn from(value: C1::T) -> Control<'a> {
+	fn from(value: C1::T) -> Control {
 		Control::C1(value)
 	}
 }
 
-impl<'a> From<DEC::T<'a>> for Control<'a> {
+impl From<DEC::T> for Control {
 	#[inline]
-	fn from(value: DEC::T<'a>) -> Control<'a> {
+	fn from(value: DEC::T) -> Control {
 		Control::DEC(value)
 	}
 }
 
-impl<'a> From<CSI::T> for Control<'a> {
+impl From<CSI::T> for Control {
 	#[inline]
-	fn from(value: CSI::T) -> Control<'a> {
+	fn from(value: CSI::T) -> Control {
 		Control::C1(C1::ControlSequence(value))
 	}
 }
 
-impl<'a> From<SGR::T> for Control<'a> {
+impl From<SGR::T> for Control {
 	#[inline]
-	fn from(value: SGR::T) -> Control<'a> {
+	fn from(value: SGR::T) -> Control {
 		Control::C1(C1::ControlSequence(CSI::SelectGraphicalRendition(small_vec![value])))
 	}
 }
 
-impl<'a> From<SmallVec<[SGR::T; CSI::SIZE]>> for Control<'a> {
+impl From<SmallVec<[SGR::T; CSI::SIZE]>> for Control {
 	#[inline]
-	fn from(value: SmallVec<[SGR::T; CSI::SIZE]>) -> Control<'a> {
+	fn from(value: SmallVec<[SGR::T; CSI::SIZE]>) -> Control {
 		Control::C1(C1::ControlSequence(CSI::SelectGraphicalRendition(value)))
 	}
 }
 
-impl<'a> Format for Control<'a> {
+impl Format for Control {
 	#[inline]
 	fn fmt<W: Write>(&self, f: W) -> io::Result<()> {
 		match self {
