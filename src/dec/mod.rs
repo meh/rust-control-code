@@ -434,10 +434,10 @@ mod test {
 		#[test]
 		fn scodfk() {
 			test!(b"\x1BQ0'hue'" =>
-				DEC::DefineFunctionKey(1, "hue"));
+				DEC::DefineFunctionKey(1, "hue".into()));
 
 			test!(b"\x1BQaahuea" =>
-				DEC::DefineFunctionKey(50, "hue"));
+				DEC::DefineFunctionKey(50, "hue".into()));
 		}
 
 		#[test]
@@ -586,8 +586,8 @@ mod test {
 
 		#[test]
 		fn scodfk() {
-			test!(DEC::DefineFunctionKey(1, "hue"));
-			test!(DEC::DefineFunctionKey(50, "hue"));
+			test!(DEC::DefineFunctionKey(1, "hue".into()));
+			test!(DEC::DefineFunctionKey(50, "hue".into()));
 		}
 
 		#[test]
