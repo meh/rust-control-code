@@ -64,10 +64,10 @@ with_args!(DECSCUSR<1, args> -> DEC,
 
 with_args!(DECSTBM<2, args> -> DEC,
 	ScrollRegion {
-		top:    arg!(args[0] => 1) - 1,
+		top:    arg!(args[0] => 1).saturating_sub(1),
 		bottom: arg!(args[1])
 			.and_then(|v| if v == 0 { None } else { Some(v) })
-			.map(|b| b - 1),
+			.map(|b| b.saturating_sub(1)),
 	});
 
 with_args!(DECSTR -> DEC,
