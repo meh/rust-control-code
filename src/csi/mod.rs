@@ -557,7 +557,7 @@ with_args!(CBT<1, args> -> CSI,
 	CursorBackTabulation(arg!(args[0] => 1)));
 
 with_args!(CHA<1, args> -> CSI,
-	CursorHorizontalPosition(arg!(args[0] => 1) - 1));
+	CursorHorizontalPosition(arg!(args[0] => 1).saturating_sub(1)));
 
 with_args!(CHT<1, args> -> CSI,
 	CursorForwardTabulation(arg!(args[0] => 1)));
@@ -569,7 +569,10 @@ with_args!(CPL<1, args> -> CSI,
 	CursorPreviousLine(arg!(args[0] => 1)));
 
 with_args!(CPR<2, args> -> CSI,
-	CursorPositionReport { y: arg!(args[0] => 1) - 1, x: arg!(args[1] => 1) - 1 });
+	CursorPositionReport {
+		y: arg!(args[0] => 1).saturating_sub(1),
+		x: arg!(args[1] => 1).saturating_sub(1)
+	});
 
 with_args!(CTC<1, args> -> CSI, ?
 	TabulationControl::parse(arg!(args[0] => 0)).map(CursorTabulationControl));
@@ -584,7 +587,10 @@ with_args!(CUF<1, args> -> CSI,
 	CursorForward(arg!(args[0] => 1)));
 
 with_args!(CUP<2, args> -> CSI,
-	CursorPosition { y: arg!(args[0] => 1) - 1, x: arg!(args[1] => 1) - 1 });
+	CursorPosition {
+		y: arg!(args[0] => 1).saturating_sub(1),
+		x: arg!(args[1] => 1).saturating_sub(1)
+	});
 
 with_args!(CUU<1, args> -> CSI,
 	CursorUp(arg!(args[0] => 1)));
@@ -638,7 +644,7 @@ with_args!(GSM<2, args> -> CSI,
 	GraphicSizeModification { height: arg!(args[0] => 100), width: arg!(args[1] => 100) });
 
 with_args!(HPA<1, args> -> CSI,
-	CursorHorizontalPosition(arg!(args[0] => 1) - 1));
+	CursorHorizontalPosition(arg!(args[0] => 1).saturating_sub(1)));
 
 with_args!(HPB<1, args> -> CSI,
 	CursorBack(arg!(args[0] => 1)));
@@ -647,7 +653,10 @@ with_args!(HPR<1, args> -> CSI,
 	CursorForward(arg!(args[0] => 1)));
 
 with_args!(HVP<2, args> -> CSI,
-	CursorPosition{ y: arg!(args[0] => 1) - 1, x: arg!(args[1] => 1) - 1 });
+	CursorPosition {
+		y: arg!(args[0] => 1).saturating_sub(1),
+		x: arg!(args[1] => 1).saturating_sub(1),
+	});
 
 with_args!(ICH<1, args> -> CSI,
 	InsertCharacter(arg!(args[0] => 1)));
@@ -772,7 +781,7 @@ with_args!(TBC<1, args> -> CSI, ?
 	Tabulation::parse(arg!(args[0] => 0)).map(TabulationClear));
 
 with_args!(VPA<1, args> -> CSI,
-	CursorVerticalPosition(arg!(args[0] => 1) - 1));
+	CursorVerticalPosition(arg!(args[0] => 1).saturating_sub(1)));
 
 with_args!(VPB<1, args> -> CSI,
 	CursorUp(arg!(args[0] => 1)));
